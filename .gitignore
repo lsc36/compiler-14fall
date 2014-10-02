@@ -1,0 +1,5 @@
+.tar
+.tar.bz2
+
+# LibreOffice lock
+.~lock*
