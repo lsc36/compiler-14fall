@@ -1,16 +1,22 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+
 #ifndef HEADER_H_INCLUDED
 #define HEADER_H_INCLUDED
 
 /******************************************************************************************************************************************
     All enumeration literals
        TokenType : Specify the type of the token scanner returns
-	   DataType  : The data type of the declared variable
-	   StmtType  : Indicate one statement in AcDc program is print or assignment statement.
-	   ValueType : The node types of the expression tree that represents the expression on the right hand side of the assignment statement.
-	               Identifier, IntConst, FloatConst must be the leaf nodes ex: a, b, c , 1.5 , 3.
-				   PlusNode, MinusNode, MulNode, DivNode are the operations in AcDc. They must be the internal nodes.
-                   Note that IntToFloatConvertNode to represent the type coercion may appear after finishing type checking. 			  
-	   Operation : Specify all arithematic expression, including +, - , *, / and type coercion.
+       DataType  : The data type of the declared variable
+       StmtType  : Indicate one statement in AcDc program is print or assignment statement.
+       ValueType : The node types of the expression tree that represents the expression on the right hand side of the assignment statement.
+                   Identifier, IntConst, FloatConst must be the leaf nodes ex: a, b, c , 1.5 , 3.
+                   PlusNode, MinusNode, MulNode, DivNode are the operations in AcDc. They must be the internal nodes.
+                   Note that IntToFloatConvertNode to represent the type coercion may appear after finishing type checking.
+       Operation : Specify all arithematic expression, including +, - , *, / and type coercion.
 *******************************************************************************************************************************************/
 
 typedef enum TokenType { FloatDeclaration, IntegerDeclaration, PrintOp, AssignmentOp, PlusOp, MinusOp,
@@ -21,8 +27,8 @@ typedef enum ValueType { Identifier, IntConst, FloatConst, PlusNode, MinusNode, 
 typedef enum Operation { Plus, Minus, Mul, Div, Assign, IntToFloatConvert } Operation;
 
 
-/**************************************************************************************** 
-   All structures to facilitate the processes of 
+/****************************************************************************************
+   All structures to facilitate the processes of
    scanning, parsing, AST, type-checking, building the symbol table, and code generation.
 *****************************************************************************************/
 
@@ -41,11 +47,11 @@ typedef struct Declaration{
     char name;
 }Declaration;
 
-/* 
+/*
     For decls production or say all declarations. (
-	You can view it as the subtree for decls in AST,
-	or just view it as the linked list that stores 
-	all declarations. ) 
+    You can view it as the subtree for decls in AST,
+    or just view it as the linked list that stores
+    all declarations. )
 */
 typedef struct Declarations{
     Declaration first;
@@ -64,10 +70,10 @@ typedef struct Value{
 }Value;
 
 
-/* 
+/*
    The data structure of the expression tree.
-   Recall how to deal with expression by tree 
-   in data structure course.   
+   Recall how to deal with expression by tree
+   in data structure course.
 */
 typedef struct Expression{
     Value v;

@@ -1,3 +1,5 @@
+*.o
+
 # Archives for submitting
 .tar
 .tar.bz2
