@@ -1,5 +1,9 @@
+# Archives for submitting
 .tar
 .tar.bz2
 
 # LibreOffice lock
 .~lock*
+
+# hw1 binary
+AcDc
