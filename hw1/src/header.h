@@ -120,17 +120,9 @@ typedef struct SymbolTable{
 
 Declaration makeDeclarationNode( Token declare_type, Token identifier );
 Declarations *makeDeclarationTree( Declaration decl, Declarations *decls );
-Declaration parseDeclaration( FILE *source, Token token );
-Declarations *parseDeclarations( FILE *source );
-Expression *parseValue( FILE *source );
-Expression *parseExpressionTail( FILE *source, Expression *lvalue );
-Expression *parseExpression( FILE *source, Expression *lvalue );
 Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail );
 Statement makePrintNode( char id );
 Statements *makeStatementTree( Statement stmt, Statements *stmts );
-Statement parseStatement( FILE *source, Token token );
-Statements *parseStatements( FILE * source );
-Program parser( FILE *source );
 void InitializeTable( SymbolTable *table );
 void add_table( SymbolTable *table, char c, DataType t );
 SymbolTable build( Program program );

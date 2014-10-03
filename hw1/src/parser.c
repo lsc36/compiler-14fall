@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "header.h"
 #include "scanner.h"
+#include "parser.h"
 
 
 /********************************************************
