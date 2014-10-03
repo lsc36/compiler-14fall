@@ -13,6 +13,9 @@ AcDc
 # ide or editor file
 *.swp
 *.swo
-*.kde4
+*.kdev4
 *.idea
-.kde4/
+.kdev4/
+
+# cmake build directory
+build/
