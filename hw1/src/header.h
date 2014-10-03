@@ -132,9 +132,6 @@ DataType lookup_table( SymbolTable *table, char c );
 void checkexpression( Expression * expr, SymbolTable * table );
 void checkstmt( Statement *stmt, SymbolTable * table );
 void check( Program *program, SymbolTable * table);
-void fprint_op( FILE *target, ValueType op );
-void fprint_expr( FILE *target, Expression *expr );
-void gencode( Program prog, FILE * target );
 
 void print_expr( Expression *expr );
 void test_parser( FILE *source );

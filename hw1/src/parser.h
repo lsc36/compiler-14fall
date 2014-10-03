@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "header.h"
 
 Declaration parseDeclaration( FILE *source, Token token );
 Declarations *parseDeclarations( FILE *source );
