@@ -9,3 +9,10 @@
 
 # hw1 binary
 AcDc
+
+# ide or editor file
+*.swp
+*.swo
+*.kde4
+*.idea
+.kde4/
