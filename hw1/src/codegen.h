@@ -1,7 +1,7 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
-#include "header.h"
+#include "type.h"
 
 void fprint_op( FILE *target, ValueType op );
 void fprint_expr( FILE *target, Expression *expr );

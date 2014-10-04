@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include "header.h"
+#include "type.h"
+#include "checker.h"
 
 
 /********************************************************************

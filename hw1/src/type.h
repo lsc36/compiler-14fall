@@ -118,22 +118,6 @@ typedef struct SymbolTable{
 } SymbolTable;
 
 
-Declaration makeDeclarationNode( Token declare_type, Token identifier );
-Declarations *makeDeclarationTree( Declaration decl, Declarations *decls );
-Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail );
-Statement makePrintNode( char id );
-Statements *makeStatementTree( Statement stmt, Statements *stmts );
-void InitializeTable( SymbolTable *table );
-void add_table( SymbolTable *table, char c, DataType t );
-SymbolTable build( Program program );
-void convertType( Expression * old, DataType type );
-DataType generalize( Expression *left, Expression *right );
-DataType lookup_table( SymbolTable *table, char c );
-void checkexpression( Expression * expr, SymbolTable * table );
-void checkstmt( Statement *stmt, SymbolTable * table );
-void check( Program *program, SymbolTable * table);
 
-void print_expr( Expression *expr );
-void test_parser( FILE *source );
 
 #endif // HEADER_H_INCLUDED

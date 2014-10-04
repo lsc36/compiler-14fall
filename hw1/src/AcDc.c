@@ -1,6 +1,12 @@
-#include "header.h"
+#include "type.h"
 #include "parser.h"
 #include "codegen.h"
+#include "builder.h"
+#include "checker.h"
+
+
+void print_expr( Expression *expr );
+void test_parser( FILE *source );
 
 
 int main( int argc, char *argv[] )

@@ -1,7 +1,14 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "header.h"
+#include "type.h"
+
+Declaration makeDeclarationNode( Token declare_type, Token identifier );
+Declarations *makeDeclarationTree( Declaration decl, Declarations *decls );
+Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail );
+Statement makePrintNode( char id );
+Statements *makeStatementTree( Statement stmt, Statements *stmts );
+
 
 Declaration parseDeclaration( FILE *source, Token token );
 Declarations *parseDeclarations( FILE *source );

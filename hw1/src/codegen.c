@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "header.h"
+#include "type.h"
 #include "codegen.h"
 
 
