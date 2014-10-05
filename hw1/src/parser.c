@@ -8,8 +8,6 @@
 Build AST
 **********************************************************************/
 
-// following three functions are only used by parser.c
-// TODO: seperate this file
 Declaration makeDeclarationNode( Token declare_type, Token identifier )
 {
     Declaration tree_node;
