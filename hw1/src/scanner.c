@@ -44,9 +44,9 @@ Token getNumericToken( FILE *source, char c )
 
 Token scanner( FILE *source )
 {
+    static Token last_token = {.type = Nothing};
     char c;
     Token token;
-    static Token last_token;
 
     while( !feof(source) ){
         c = fgetc(source);
@@ -54,7 +54,8 @@ Token scanner( FILE *source )
         while( isspace(c) ) c = fgetc(source);
 
         if( isdigit(c) ) {
-            return getNumericToken(source, c);
+            last_token = getNumericToken(source, c);
+            return last_token;
         }
         token.tok[0] = c;
         token.tok[1] = '\0';
@@ -67,38 +68,43 @@ Token scanner( FILE *source )
                 token.type = PrintOp;
             else
                 token.type = Alphabet;
+            last_token = token;
             return token;
         }
 
         switch(c){
             case '=':
                 token.type = AssignmentOp;
-                return token;
+                break;
             case '+':
                 token.type = PlusOp;
-                return token;
+                break;
             case '-':
-            //問題：當前面有op時，即為
-            //採用預讀
+                //問題：當前面有op時，即為
+                //採用預讀，存於靜態函數變數last_token
                 token.type = MinusOp;
-                return token;
+                break;
             case '*':
                 token.type = MulOp;
-                return token;
+                break;
             case '/':
                 token.type = DivOp;
-                return token;
+                break;
             case EOF:
                 token.type = EOFsymbol;
                 token.tok[0] = '\0';
-                return token;
+                break;
             default:
                 printf("Invalid character : %c\n", c);
                 exit(1);
         }
+        last_token = token;
+        return token;
     }
 
     token.tok[0] = '\0';
     token.type = EOFsymbol;
+    // 下面這行大概不用了
+    last_token = token;
     return token;
 }
