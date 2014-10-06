@@ -46,15 +46,16 @@ Token scanner( FILE *source )
 {
     char c;
     Token token;
+    static Token last_token;
 
     while( !feof(source) ){
         c = fgetc(source);
 
         while( isspace(c) ) c = fgetc(source);
 
-        if( isdigit(c) )
+        if( isdigit(c) ) {
             return getNumericToken(source, c);
-
+        }
         token.tok[0] = c;
         token.tok[1] = '\0';
         if( islower(c) ){
@@ -77,6 +78,8 @@ Token scanner( FILE *source )
                 token.type = PlusOp;
                 return token;
             case '-':
+            //問題：當前面有op時，即為
+            //採用預讀
                 token.type = MinusOp;
                 return token;
             case '*':
