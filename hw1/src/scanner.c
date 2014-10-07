@@ -51,6 +51,10 @@ int is_value(TokenType t){
     return t == Alphabet || t == IntValue || t == FloatValue;
 }
 
+int is_var(char c) {
+    return c != 'f' && c != 'i' && c != 'p';
+}
+
 Token scanner( FILE *source )
 {
     static Token last_token = {.type = Nothing};
@@ -69,14 +73,14 @@ Token scanner( FILE *source )
         token.tok[0] = c;
         token.tok[1] = '\0';
         if( islower(c) ){
-            if( c == 'f' )
+            if (is_var(c))
+                token.type = Alphabet;
+            else if( c == 'f' )
                 token.type = FloatDeclaration;
             else if( c == 'i' )
                 token.type = IntegerDeclaration;
             else if( c == 'p' )
                 token.type = PrintOp;
-            else
-                token.type = Alphabet;
             last_token = token;
             return token;
         }
