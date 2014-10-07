@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <tic.h>
 #include "type.h"
 #include "scanner.h"
 
@@ -51,8 +52,20 @@ int is_value(TokenType t){
     return t == Alphabet || t == IntValue || t == FloatValue;
 }
 
-int is_var(char c) {
-    return c != 'f' && c != 'i' && c != 'p';
+int is_var_char(char c){
+    return islower(c) && c != 'f' && c != 'i' && c != 'p';
+}
+
+Token getAlphabetToken( FILE *source, char c ) {
+    int i = 0;
+    Token token = {.type = Alphabet};
+    token.tok[i++] = c;
+    while (is_var_char(c = fgetc(source))) {
+        token.tok[i++] = c;
+    }
+    ungetc(c, source);
+    token.tok[i] = '\0';
+    return token;
 }
 
 Token scanner( FILE *source )
@@ -73,14 +86,15 @@ Token scanner( FILE *source )
         token.tok[0] = c;
         token.tok[1] = '\0';
         if( islower(c) ){
-            if (is_var(c))
-                token.type = Alphabet;
-            else if( c == 'f' )
+            if( c == 'f' )
                 token.type = FloatDeclaration;
             else if( c == 'i' )
                 token.type = IntegerDeclaration;
             else if( c == 'p' )
                 token.type = PrintOp;
+            else{
+                token = getAlphabetToken(source, c);
+            }
             last_token = token;
             return token;
         }
