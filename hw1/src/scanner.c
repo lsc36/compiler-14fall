@@ -9,6 +9,10 @@ Token getNumericToken( FILE *source, char c )
 {
     Token token;
     int i = 0;
+    if (c == '-') {
+        token.tok[i++] = c;
+        c = fgetc(source);
+    }
 
     while( isdigit(c) ) {
         token.tok[i++] = c;
@@ -40,6 +44,11 @@ Token getNumericToken( FILE *source, char c )
     token.tok[i] = '\0';
     token.type = FloatValue;
     return token;
+}
+
+// return true if its TokenType is Alphabet, or IntValue, or FloatValue
+int is_value(TokenType t){
+    return t == Alphabet || t == IntValue || t == FloatValue;
 }
 
 Token scanner( FILE *source )
@@ -80,9 +89,14 @@ Token scanner( FILE *source )
                 token.type = PlusOp;
                 break;
             case '-':
-                //問題：當前面有op時，即為
-                //採用預讀，存於靜態函數變數last_token
-                token.type = MinusOp;
+                // 當上一個token為value時，將 - 視為二元運算子
+                // 否則視為 unary operater
+                if (is_value(last_token.type)) {
+                    token.type = MinusOp;
+                }
+                else {
+                    getNumericToken(source, c);
+                }
                 break;
             case '*':
                 token.type = MulOp;
