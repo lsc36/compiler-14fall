@@ -95,7 +95,8 @@ Token scanner( FILE *source )
                     token.type = MinusOp;
                 }
                 else {
-                    getNumericToken(source, c);
+                    last_token = getNumericToken(source, c);
+                    return last_token;
                 }
                 break;
             case '*':
