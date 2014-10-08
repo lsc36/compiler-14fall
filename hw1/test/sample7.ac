@@ -1,0 +1,11 @@
+i wxyz
+f uuuv
+i c
+i tt
+wxyz = 1
+uuuv = 2.1
+c = 1
+d = 2
+c = wxyz + tt
+p c
+p tt

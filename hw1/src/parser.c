@@ -110,7 +110,9 @@ Declarations *parseDeclarations( FILE *source )
             return makeDeclarationTree( decl, decls );
         case PrintOp:
         case Alphabet:
-            ungetc(token.tok[0], source);
+            for (int i = strlen(token.tok) - 1; i >= 0; i--) {
+                ungetc(token.tok[i], source);
+            }
             return NULL;
         case EOFsymbol:
             return NULL;
@@ -169,7 +171,9 @@ Expression *parseExpressionTail( FILE *source, Expression *lvalue )
             return parseExpressionTail(source, expr);
         case Alphabet:
         case PrintOp:
-            ungetc(token.tok[0], source);
+            for (int i = strlen(token.tok) - 1; i >= 0; i--) {
+                ungetc(token.tok[i], source);
+            }
             return lvalue;
         case EOFsymbol:
             return lvalue;
@@ -201,7 +205,9 @@ Expression *parseExpression( FILE *source, Expression *lvalue )
             return parseExpressionTail(source, expr);
         case Alphabet:
         case PrintOp:
-            ungetc(token.tok[0], source);
+            for (int i = strlen(token.tok) - 1; i >= 0; i--) {
+                ungetc(token.tok[i], source);
+            }
             return NULL;
         case EOFsymbol:
             return NULL;
