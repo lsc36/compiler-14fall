@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "type.h"
 #include "builder.h"
 
@@ -10,17 +11,25 @@ void InitializeTable( SymbolTable *table )
 {
     int i;
 
-    for(i = 0 ; i < 26; i++)
+    for(i = 0 ; i < 26; i++) {
         table->table[i] = Notype;
+        table->name[i][0] = '\0';
+    }
+    table->count = 0;
 }
 
-void add_table( SymbolTable *table, char c, DataType t )
+void add_table( SymbolTable *table, char *s, DataType t )
 {
-    int index = (int)(c - 'a');
-
-    if(table->table[index] != Notype)
-        printf("Error : id %c has been declared\n", c);//error
-    table->table[index] = t;
+    int i;
+    for (i = 0; i < table->count; i++) {
+        if(strcmp(s, table->name[i]) == 0) {
+            printf("Error : id %s has been declared\n", s);//error
+            exit(1);
+        }
+    }
+    table->count++;
+    strcpy(table->name[i++], s);
+    table->table[i] = t;
 }
 
 SymbolTable build( Program program )

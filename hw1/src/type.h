@@ -7,6 +7,8 @@
 #ifndef HEADER_H_INCLUDED
 #define HEADER_H_INCLUDED
 
+#define MAX_VAR_LEN 256
+
 /******************************************************************************************************************************************
     All enumeration literals
        TokenType : Specify the type of the token scanner returns
@@ -36,7 +38,7 @@ typedef enum Operation { Plus, Minus, Mul, Div, Assign, IntToFloatConvert } Oper
 /* For scanner */
 typedef struct Token{
     TokenType type;
-    char tok[1025];
+    char tok[MAX_VAR_LEN + 1];
 }Token;
 
 /*** The following are nodes of the AST. ***/
@@ -44,7 +46,7 @@ typedef struct Token{
 /* For decl production or say one declaration statement */
 typedef struct Declaration{
     DataType type;
-    char name;
+    char name[MAX_VAR_LEN + 1];
 }Declaration;
 
 /*
@@ -62,7 +64,7 @@ typedef struct Declarations{
 typedef struct Value{
     ValueType type;
     union{
-        char id;                   /* if the node represent the access of the identifier */
+        char id[MAX_VAR_LEN + 1];  /* if the node represent the access of the identifier */
         Operation op;              /* store +, -, *, /, =, type_convert */
         int ivalue;                /* for integer constant in the expression */
         float fvalue;              /* for float constant */
@@ -85,7 +87,7 @@ typedef struct Expression{
 
 /* For one assignment statement */
 typedef struct AssignmentStatement{
-    char id;
+    char id[MAX_VAR_LEN + 1];
     Expression *expr;
     DataType type;      /* For type checking to store the type of all expression on the right. */
 }AssignmentStatement;
@@ -95,7 +97,7 @@ typedef struct AssignmentStatement{
 typedef struct Statement{
     StmtType type;
     union{
-        char variable;              /* print statement */
+        char variable[MAX_VAR_LEN + 1];          /* print statement */
         AssignmentStatement assign;
     }stmt;
 }Statement;
@@ -115,6 +117,8 @@ typedef struct Program{
 /* For building the symbol table */
 typedef struct SymbolTable{
     DataType table[26];
+    char name[26][MAX_VAR_LEN + 1];
+    int count;
 } SymbolTable;
 
 

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "type.h"
 #include "scanner.h"
 #include "parser.h"
@@ -22,7 +23,7 @@ Declaration makeDeclarationNode( Token declare_type, Token identifier )
         default:
             break;
     }
-    tree_node.name = identifier.tok[0];
+    strcpy(tree_node.name, identifier.tok);
 
     return tree_node;
 }
@@ -37,13 +38,13 @@ Declarations *makeDeclarationTree( Declaration decl, Declarations *decls )
 }
 
 
-Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail )
+Statement makeAssignmentNode( char *id, Expression *v, Expression *expr_tail )
 {
     Statement stmt;
     AssignmentStatement assign;
 
     stmt.type = Assignment;
-    assign.id = id;
+    strcpy(assign.id, id);
     if(expr_tail == NULL)
         assign.expr = v;
     else
@@ -53,11 +54,11 @@ Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail )
     return stmt;
 }
 
-Statement makePrintNode( char id )
+Statement makePrintNode( char *id )
 {
     Statement stmt;
     stmt.type = Print;
-    stmt.stmt.variable = id;
+    strcpy(stmt.stmt.variable, id);
 
     return stmt;
 }
@@ -128,7 +129,7 @@ Expression *parseValue( FILE *source )
     switch(token.type){
         case Alphabet:
             (value->v).type = Identifier;
-            (value->v).val.id = token.tok[0];
+            strcpy((value->v).val.id, token.tok);
             break;
         case IntValue:
             (value->v).type = IntConst;
@@ -221,7 +222,7 @@ Statement parseStatement( FILE *source, Token token )
             if(next_token.type == AssignmentOp){
                 value = parseValue(source);
                 expr = parseExpression(source, value);
-                return makeAssignmentNode(token.tok[0], value, expr);
+                return makeAssignmentNode(token.tok, value, expr);
             }
             else{
                 printf("Syntax Error: Expect an assignment op %s\n", next_token.tok);
@@ -230,12 +231,12 @@ Statement parseStatement( FILE *source, Token token )
         case PrintOp:
             next_token = scanner(source);
             if(next_token.type == Alphabet)
-                return makePrintNode(next_token.tok[0]);
+                return makePrintNode(next_token.tok);
             else{
                 printf("Syntax Error: Expect an identifier %s\n", next_token.tok);
                 exit(1);
             }
-            break;
+            //break;
         default:
             printf("Syntax Error: Expect a statement %s\n", token.tok);
             exit(1);
