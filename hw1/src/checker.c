@@ -53,7 +53,8 @@ DataType lookup_table( SymbolTable *table, char *s )
         }
     }
     printf("Error : identifier %s is not declared\n", s);//error
-    exit(1);
+    return Notype;
+    //exit(1);
 }
 
 void checkexpression( Expression * expr, SymbolTable * table )
