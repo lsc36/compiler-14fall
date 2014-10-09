@@ -85,14 +85,12 @@ Token scanner( FILE *source )
             char nc = (char)fgetc(source);
             if( c == 'f' && isspace(nc)){
                 token.type = FloatDeclaration;
-                strcpy(token.tok, "f ");             // 讓之後unget整個token的時候可以unget整個回來
             }
             else if( c == 'i' && isspace(nc)){
                 token.type = IntegerDeclaration;
-                strcpy(token.tok, "i ");
             }
             else if( c == 'p' && isspace(nc)){
-                strcpy(token.tok, "p ");
+                strcpy(token.tok, "p ");            // 讓之後unget整個token的時候可以unget整個回來
                 token.type = PrintOp;
             }
             else{
