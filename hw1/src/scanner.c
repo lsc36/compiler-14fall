@@ -52,15 +52,11 @@ int is_value(TokenType t){
     return t == Alphabet || t == IntValue || t == FloatValue;
 }
 
-int is_var_char(char c){
-    return islower(c) && c != 'f' && c != 'i' && c != 'p';
-}
-
 Token getAlphabetToken( FILE *source, char c ) {
     int i = 0;
     Token token = {.type = Alphabet};
     token.tok[i++] = c;
-    while (is_var_char(c = fgetc(source))) {
+    while (islower(c = fgetc(source))) {
         token.tok[i++] = c;
     }
     ungetc(c, source);
@@ -86,13 +82,21 @@ Token scanner( FILE *source )
         token.tok[0] = c;
         token.tok[1] = '\0';
         if( islower(c) ){
-            if( c == 'f' )
+            char nc = (char)fgetc(source);
+            if( c == 'f' && isspace(nc)){
                 token.type = FloatDeclaration;
-            else if( c == 'i' )
+                strcpy(token.tok, "f ");             // 讓之後unget整個token的時候可以unget整個回來
+            }
+            else if( c == 'i' && isspace(nc)){
                 token.type = IntegerDeclaration;
-            else if( c == 'p' )
+                strcpy(token.tok, "i ");
+            }
+            else if( c == 'p' && isspace(nc)){
+                strcpy(token.tok, "p ");
                 token.type = PrintOp;
+            }
             else{
+                ungetc(nc, source);
                 token = getAlphabetToken(source, c);
             }
             last_token = token;
