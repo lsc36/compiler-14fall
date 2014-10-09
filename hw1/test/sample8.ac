@@ -1,0 +1,8 @@
+i a
+f b
+f c
+a = 5
+b = a + 3.2
+c = a + b + 3.4
+p b
+p c

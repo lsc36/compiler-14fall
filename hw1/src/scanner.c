@@ -65,7 +65,6 @@ Token getAlphabetToken( FILE *source, char c ) {
     }
     ungetc(c, source);
     token.tok[i] = '\0';
-    printf("scan Alphabet which is %s\n", token.tok);
     return token;
 }
 

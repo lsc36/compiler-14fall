@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "type.h"
 #include "codegen.h"
 
@@ -21,13 +22,26 @@ void fprint_op( FILE *target, ValueType op )
     }
 }
 
-void fprint_expr( FILE *target, Expression *expr)
+// 到codegen才來查找所屬register
+char find_register(char *s, SymbolTable *table){
+    for (int i = 0; i < table->count; i++) {
+        if (strcmp(s, table->name[i]) == 0) {
+            return (char)(i + 'a');
+        }
+    }
+    printf("Error, can not find variable %s", s);
+    exit(1);
+}
+
+void fprint_expr(FILE *target, Expression *expr, SymbolTable *table)
 {
 
     if(expr->leftOperand == NULL){
+        char reg;
         switch( (expr->v).type ){
             case Identifier:
-                fprintf(target,"l%s\n",(expr->v).val.id);
+                reg = find_register((expr->v).val.id, table);
+                fprintf(target,"l%c\n", reg);
                 break;
             case IntConst:
                 fprintf(target,"%d\n",(expr->v).val.ivalue);
@@ -41,32 +55,35 @@ void fprint_expr( FILE *target, Expression *expr)
         }
     }
     else{
-        fprint_expr(target, expr->leftOperand);
+        fprint_expr(target, expr->leftOperand, table);
         if(expr->rightOperand == NULL){
             fprintf(target,"5k\n");
         }
         else{
             //	fprint_right_expr(expr->rightOperand);
-            fprint_expr(target, expr->rightOperand);
+            fprint_expr(target, expr->rightOperand, table);
             fprint_op(target, (expr->v).type);
         }
     }
 }
 
-void gencode(Program prog, FILE * target)
+void gencode(Program prog, FILE * target, SymbolTable *table)
 {
     Statements *stmts = prog.statements;
     Statement stmt;
 
     while(stmts != NULL){
         stmt = stmts->first;
+        char reg;
         switch(stmt.type){
             case Print:
-                fprintf(target,"l%s\n",stmt.stmt.variable);
+                reg = find_register(stmt.stmt.variable, table);
+                fprintf(target,"l%c\n", reg);
                 fprintf(target,"p\n");
                 break;
             case Assignment:
-                fprint_expr(target, stmt.stmt.assign.expr);
+                reg = find_register(stmt.stmt.variable, table);
+                fprint_expr(target, stmt.stmt.assign.expr, table);
                 /*
                    if(stmt.stmt.assign.type == Int){
                    fprintf(target,"0 k\n");
@@ -74,7 +91,7 @@ void gencode(Program prog, FILE * target)
                    else if(stmt.stmt.assign.type == Float){
                    fprintf(target,"5 k\n");
                    }*/
-                fprintf(target,"s%s\n",stmt.stmt.assign.id);
+                fprintf(target,"s%c\n", reg);
                 fprintf(target,"0 k\n");
                 break;
         }
