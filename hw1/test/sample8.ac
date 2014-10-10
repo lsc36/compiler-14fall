@@ -1,8 +1,11 @@
-i a
-f b
-f c
-a = 5
-b = a + 3.2
-c = a + b + 3.4
-p b
-p c
+i pfixyz
+f uuuv
+i ii
+i tt
+pfixyz = 1
+uuuv = 2.1
+ii = 1
+tt = 2
+ii = pfixyz + tt
+p ii
+p tt

@@ -1,6 +1,6 @@
 PROGRAM = File.expand_path("../../src/build/AcDc", __FILE__)
 TEST_SUITE_DIR = "../../test"
-TEST_NUMBER = 7
+TEST_NUMBER = 9
 
 def expand_test_dir(str)
   File.expand_path(File.join(TEST_SUITE_DIR, str), __FILE__)
@@ -13,14 +13,19 @@ error = 0
 
   `#{PROGRAM} #{input} #{output}`
 
-  answer = expand_test_dir("sample" + i.to_s + ".dc")
+  my_ans = expand_test_dir("my_dc_ans" + i.to_s)
+  `dc #{output} > #{my_ans}`
 
-  diff = `diff #{output} #{answer}`
+  answer = expand_test_dir("standard_dc_ans" + i.to_s)
+
+  diff = `diff #{my_ans} #{answer}`
 
   if diff != ""
     error += 1
     puts "test number #{i} is wrong!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    puts diff
+    puts `colordiff -y #{my_ans} #{answer}`
+  else
+    puts "test number #{i} is correct"
   end
 end
 puts "****************************************************"
