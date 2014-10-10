@@ -22,8 +22,8 @@
 *******************************************************************************************************************************************/
 
 
-typedef enum TokenType { FloatDeclaration, IntegerDeclaration, PrintOp, AssignmentOp, PlusOp, MinusOp, NegOp, // 稱unary minus為NegOP
-             MulOp, DivOp, Alphabet, IntValue, FloatValue, EOFsymbol, Nothing } TokenType;
+typedef enum TokenType { FloatDeclaration, IntegerDeclaration, PrintOp, AssignmentOp, PlusOp, MinusOp,  // 稱unary minus為NegOP
+             MulOp, DivOp, Alphabet, IntValue, FloatValue, EOFsymbol} TokenType;
 typedef enum DataType { Int, Float, Notype }DataType;
 typedef enum StmtType { Print, Assignment } StmtType;
 typedef enum ValueType { Identifier, IntConst, FloatConst, PlusNode, NegNode, MinusNode, MulNode, DivNode, IntToFloatConvertNode } ValueType;

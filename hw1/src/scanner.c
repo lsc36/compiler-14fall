@@ -14,7 +14,7 @@ Token getNumericToken( FILE *source, char c )
 
     while( isdigit(c) ) {
         token.tok[i++] = c;
-        c = fgetc(source);
+        c = (char)fgetc(source);
     }
 
     if( c != '.' ){
@@ -26,7 +26,7 @@ Token getNumericToken( FILE *source, char c )
 
     token.tok[i++] = '.';
 
-    c = fgetc(source);
+    c = (char)fgetc(source);
     if( !isdigit(c) ){
         ungetc(c, source);
         printf("Expect a digit : %c\n", c);
@@ -35,7 +35,7 @@ Token getNumericToken( FILE *source, char c )
 
     while( isdigit(c) ){
         token.tok[i++] = c;
-        c = fgetc(source);
+        c = (char)fgetc(source);
     }
 
     ungetc(c, source);
@@ -44,16 +44,11 @@ Token getNumericToken( FILE *source, char c )
     return token;
 }
 
-// return true if its TokenType is Alphabet, or IntValue, or FloatValue
-int is_value(TokenType t){
-    return t == Alphabet || t == IntValue || t == FloatValue;
-}
-
 Token getAlphabetToken( FILE *source, char c ) {
     int i = 0;
     Token token = {.type = Alphabet};
     token.tok[i++] = c;
-    while (islower(c = fgetc(source))) {
+    while (islower(c = (char)fgetc(source))) {
         token.tok[i++] = c;
     }
     ungetc(c, source);
@@ -63,18 +58,16 @@ Token getAlphabetToken( FILE *source, char c ) {
 
 Token scanner( FILE *source )
 {
-    static Token last_token = {.type = Nothing};
     char c;
     Token token;
 
     while( !feof(source) ){
-        c = fgetc(source);
+        c = (char)fgetc(source);
 
-        while( isspace(c) ) c = fgetc(source);
+        while( isspace(c) ) c = (char)fgetc(source);
 
         if( isdigit(c) ) {
-            last_token = getNumericToken(source, c);
-            return last_token;
+            return getNumericToken(source, c);
         }
         token.tok[0] = c;
         token.tok[1] = '\0';
@@ -94,7 +87,6 @@ Token scanner( FILE *source )
                 ungetc(nc, source);
                 token = getAlphabetToken(source, c);
             }
-            last_token = token;
             return token;
         }
 
@@ -106,14 +98,7 @@ Token scanner( FILE *source )
                 token.type = PlusOp;
                 break;
             case '-':
-                // 當上一個token為value時，將 - 視為二元運算子
-                // 否則視為 unary operater
-                if (is_value(last_token.type)) {
-                    token.type = MinusOp;
-                }
-                else {
-                    token.type = NegOp;
-                }
+                token.type = MinusOp;
                 break;
             case '*':
                 token.type = MulOp;
@@ -129,13 +114,11 @@ Token scanner( FILE *source )
                 printf("Invalid character : %c\n", c);
                 exit(1);
         }
-        last_token = token;
         return token;
     }
 
     token.tok[0] = '\0';
     token.type = EOFsymbol;
     // 下面這行大概不用了
-    last_token = token;
     return token;
 }

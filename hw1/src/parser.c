@@ -131,10 +131,11 @@ Expression *parseValue(FILE *source)
         case Alphabet:
         case IntValue:
         case FloatValue:
-            return parsePosValue(source);
-        case NegOp:
+            return parsePosValue(token);
+        case MinusOp:
             value = (Expression *)malloc( sizeof(Expression) );
-            value->leftOperand = parsePosValue(source);
+            Token next_token = scanner(source);
+            value->leftOperand = parsePosValue(next_token);
             value->rightOperand = NULL;
             (value->v).type = NegNode;
             (value->v).val.op = Neg;
@@ -145,9 +146,8 @@ Expression *parseValue(FILE *source)
     }
 }
 
-Expression *parsePosValue(FILE *source)
+Expression *parsePosValue(Token token)
 {
-    Token token = scanner(source);
     Expression *value = (Expression *)malloc( sizeof(Expression) );
     value->leftOperand = value->rightOperand = NULL;
 
@@ -162,7 +162,7 @@ Expression *parsePosValue(FILE *source)
             break;
         case FloatValue:
             (value->v).type = FloatConst;
-            (value->v).val.fvalue = atof(token.tok);
+            (value->v).val.fvalue = (float)atof(token.tok);
             break;
         default:
             printf("Syntax Error: Expect Identifier or a Number %s\n", token.tok);
