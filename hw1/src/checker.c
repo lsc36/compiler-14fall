@@ -80,6 +80,10 @@ void checkexpression( Expression * expr, SymbolTable * table )
                 break;
         }
     }
+    else if (expr->rightOperand == NULL){
+        checkexpression(expr->leftOperand, table);
+        expr->type = expr->leftOperand->type;
+    }
     else{
         Expression *left = expr->leftOperand;
         Expression *right = expr->rightOperand;

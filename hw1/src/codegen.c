@@ -54,10 +54,15 @@ void fprint_expr(FILE *target, Expression *expr, SymbolTable *table)
                 break;
         }
     }
+    else if(expr->rightOperand == NULL && expr->v.type == NegNode){
+        fprintf(target, "0\n");
+        fprint_expr(target, expr->leftOperand, table);
+        fprintf(target, "-\n");
+    }
     else{
         fprint_expr(target, expr->leftOperand, table);
-        if(expr->rightOperand == NULL){
-            fprintf(target,"5k\n");
+        if(expr->rightOperand == NULL && expr->v.type == IntToFloatConvertNode) {
+            fprintf(target, "5k\n");
         }
         else{
             //	fprint_right_expr(expr->rightOperand);
@@ -82,7 +87,7 @@ void gencode(Program prog, FILE * target, SymbolTable *table)
                 fprintf(target,"p\n");
                 break;
             case Assignment:
-                reg = find_register(stmt.stmt.variable, table);
+                reg = find_register(stmt.stmt.assign.id, table);
                 fprint_expr(target, stmt.stmt.assign.expr, table);
                 /*
                    if(stmt.stmt.assign.type == Int){
