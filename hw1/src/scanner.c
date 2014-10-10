@@ -10,10 +10,6 @@ Token getNumericToken( FILE *source, char c )
 {
     Token token;
     int i = 0;
-    if (c == '-') {
-        token.tok[i++] = c;
-        c = fgetc(source);
-    }
 
     while( isdigit(c) ) {
         token.tok[i++] = c;
@@ -115,8 +111,7 @@ Token scanner( FILE *source )
                     token.type = MinusOp;
                 }
                 else {
-                    last_token = getNumericToken(source, c);
-                    return last_token;
+                    token.type = NegOp;
                 }
                 break;
             case '*':
