@@ -122,7 +122,30 @@ Declarations *parseDeclarations( FILE *source )
     }
 }
 
-Expression *parseValue( FILE *source )
+Expression *parseValue(FILE *source)
+{
+    Token token = scanner(source);
+    Expression *value;
+
+    switch (token.type){
+        case Alphabet:
+        case IntValue:
+        case FloatValue:
+            return parsePosValue(source);
+        case NegOp:
+            value = (Expression *)malloc( sizeof(Expression) );
+            value->leftOperand = parsePosValue(source);
+            value->rightOperand = NULL;
+            (value->v).type = NegNode;
+            (value->v).val.op = Neg;
+            return value;
+        default:
+            printf("Syntax Error: Expect Neg symbol or PosValue, but %s", token.tok);
+            exit(1);
+    }
+}
+
+Expression *parsePosValue(FILE *source)
 {
     Token token = scanner(source);
     Expression *value = (Expression *)malloc( sizeof(Expression) );
@@ -149,6 +172,8 @@ Expression *parseValue( FILE *source )
     return value;
 }
 
+// 跟parseExpression差別只在遇到Alphabet, PrintOp的返回值
+// 好多重複程式碼
 Expression *parseExpressionTail( FILE *source, Expression *lvalue )
 {
     Token token = scanner(source);
@@ -178,6 +203,7 @@ Expression *parseExpressionTail( FILE *source, Expression *lvalue )
         case EOFsymbol:
             return lvalue;
         default:
+            printf("In function parseExpressionTail\n");
             printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
             exit(1);
     }
@@ -212,6 +238,7 @@ Expression *parseExpression( FILE *source, Expression *lvalue )
         case EOFsymbol:
             return NULL;
         default:
+            printf("In function parseExpression\n");
             printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
             exit(1);
     }

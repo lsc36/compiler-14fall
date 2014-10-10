@@ -27,8 +27,8 @@ Statement -> id = val Expression
 Expression -> + val Expression
             | - val Expression
             | lambda
-val -> id
-     | inum
-     | fnum
-
-
+val -> unary- positive_val
+     | positive_val
+positive_val -> id
+			  | inum
+			  | fnum

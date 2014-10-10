@@ -1,11 +1,12 @@
 #include <stdio.h>
-#include <tic.h>
 #include "type.h"
 #include "scanner.h"
 
 /*********************************************
   Scanning
  *********************************************/
+// scan與parse一起做引起許多不必要的複雜度，unget回buffer的作法尤其醜陋，且導致last_token的不精確
+// 若將scan完的結果先行存下，之後再去擷取，會簡單些
 Token getNumericToken( FILE *source, char c )
 {
     Token token;

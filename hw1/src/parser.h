@@ -12,7 +12,7 @@ Statements *makeStatementTree( Statement stmt, Statements *stmts );
 
 Declaration parseDeclaration( FILE *source, Token token );
 Declarations *parseDeclarations( FILE *source );
-Expression *parseValue( FILE *source );
+Expression *parsePosValue(FILE *source);
 Expression *parseExpressionTail( FILE *source, Expression *lvalue );
 Expression *parseExpression( FILE *source, Expression *lvalue );
 Statement parseStatement( FILE *source, Token token );
