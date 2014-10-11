@@ -38,17 +38,14 @@ Declarations *makeDeclarationTree( Declaration decl, Declarations *decls )
 }
 
 
-Statement makeAssignmentNode( char *id, Expression *v, Expression *expr_tail )
+Statement makeAssignmentNode(char *id, Expression *expr)
 {
     Statement stmt;
     AssignmentStatement assign;
 
     stmt.type = Assignment;
     strcpy(assign.id, id);
-    if(expr_tail == NULL)
-        assign.expr = v;
-    else
-        assign.expr = expr_tail;
+    assign.expr = expr;
     stmt.stmt.assign = assign;
 
     return stmt;
@@ -172,47 +169,48 @@ Expression *parsePosValue(Token token)
     return value;
 }
 
-// 跟parseExpression差別只在遇到Alphabet, PrintOp的返回值
-// 好多重複程式碼
-Expression *parseExpressionTail( FILE *source, Expression *lvalue )
+Expression *parseTerm(FILE *source, Expression *lvalue)
 {
     Token token = scanner(source);
     Expression *expr;
-
-    switch(token.type){
+    switch (token.type){
+        case MulOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseTerm(source, expr);
+        case DivOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseTerm(source, expr);
         case PlusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = PlusNode;
-            (expr->v).val.op = Plus;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
         case MinusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = MinusNode;
-            (expr->v).val.op = Minus;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
         case Alphabet:
         case PrintOp:
             for (int i = strlen(token.tok) - 1; i >= 0; i--) {
                 ungetc(token.tok[i], source);
             }
             return lvalue;
-        case EOFsymbol:
-            return lvalue;
         default:
-            printf("In function parseExpressionTail\n");
+            printf("In function parseTerm\n");
             printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
             exit(1);
     }
+
 }
 
-Expression *parseExpression( FILE *source, Expression *lvalue )
+// 跟parseExpression差別只在遇到Alphabet, PrintOp的返回值
+// 好多重複程式碼
+Expression *parseExpression(FILE *source, Expression *lvalue)
 {
     Token token = scanner(source);
     Expression *expr;
+    Expression *val;
 
     switch(token.type){
         case PlusOp:
@@ -220,23 +218,25 @@ Expression *parseExpression( FILE *source, Expression *lvalue )
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
+            val = parseValue(source);
+            expr->rightOperand = parseTerm(source, val);
+            return parseExpression(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
+            val = parseValue(source);
+            expr->rightOperand = parseTerm(source, val);
+            return parseExpression(source, expr);
         case Alphabet:
         case PrintOp:
             for (int i = strlen(token.tok) - 1; i >= 0; i--) {
                 ungetc(token.tok[i], source);
             }
-            return NULL;
+            return lvalue;
         case EOFsymbol:
-            return NULL;
+            return lvalue;
         default:
             printf("In function parseExpression\n");
             printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
@@ -247,15 +247,16 @@ Expression *parseExpression( FILE *source, Expression *lvalue )
 Statement parseStatement( FILE *source, Token token )
 {
     Token next_token;
-    Expression *value, *expr;
+    Expression *value, *term, *expr;
 
     switch(token.type){
         case Alphabet:
             next_token = scanner(source);
             if(next_token.type == AssignmentOp){
                 value = parseValue(source);
-                expr = parseExpression(source, value);
-                return makeAssignmentNode(token.tok, value, expr);
+                term = parseTerm(source, value);
+                expr = parseExpression(source, term);
+                return makeAssignmentNode(token.tok, expr);
             }
             else{
                 printf("Syntax Error: Expect an assignment op %s\n", next_token.tok);
