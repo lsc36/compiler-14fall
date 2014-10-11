@@ -1,6 +1,6 @@
 PROGRAM = File.expand_path("../../src/build/AcDc", __FILE__)
 TEST_SUITE_DIR = "../../test"
-TEST_NUMBER = 10
+TEST_NUMBER = 11
 
 def expand_test_dir(str)
   File.expand_path(File.join(TEST_SUITE_DIR, str), __FILE__)

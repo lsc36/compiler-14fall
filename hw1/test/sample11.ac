@@ -1,0 +1,6 @@
+i elephant
+i tiger
+elephant = 6 - 15 / 3 * -2 + 9
+tiger = elephant * 2 / 5 - 18
+p elephant
+p tiger
