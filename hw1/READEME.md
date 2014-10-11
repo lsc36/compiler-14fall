@@ -14,6 +14,10 @@
  - ruby
  - colordiff
 
+## 測試資料
+
+sample12 ~ 17 為助教所給的 case1 ~ 6
+
 ## 目前CFG（會更動到完成目標）
 Program -> Declarations Statements $
 Declations -> Declaration Declarations
