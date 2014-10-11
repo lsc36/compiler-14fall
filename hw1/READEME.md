@@ -24,11 +24,15 @@ Statements -> Statement Statements
             | lambda
 Statement -> id = val Expression
            | print id
-Expression -> + val Expression
-            | - val Expression
+Expression -> + term Expression
+            | - term Expression
             | lambda
-val -> unary- positive_val
+term -> val term'
+term' -> * val term'
+	   | / val term'
+	   | lambda
+val -> unary- positiveVal
      | positive_val
-positive_val -> id
+positiveVal -> id
 			  | inum
 			  | fnum

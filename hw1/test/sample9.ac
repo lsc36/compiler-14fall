@@ -1,6 +1,6 @@
-i a
-i b
-a = -3 + -2 - -6
-b = -a + 1
-p a
-p b
+i iabi
+i fp
+iabi = -3 + -2 - -6
+fp = -iabi + 1
+p iabi
+p fp

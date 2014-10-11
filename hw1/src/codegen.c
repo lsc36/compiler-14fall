@@ -54,14 +54,14 @@ void fprint_expr(FILE *target, Expression *expr, SymbolTable *table)
                 break;
         }
     }
-    else if(expr->rightOperand == NULL && expr->v.type == NegNode){
+    else if(expr->rightOperand == NULL && expr->v.type == NegNode){    // unary minus
         fprintf(target, "0\n");
         fprint_expr(target, expr->leftOperand, table);
         fprintf(target, "-\n");
     }
     else{
         fprint_expr(target, expr->leftOperand, table);
-        if(expr->rightOperand == NULL && expr->v.type == IntToFloatConvertNode) {
+        if(expr->rightOperand == NULL && expr->v.type == IntToFloatConvertNode) {         // type convert
             fprintf(target, "5k\n");
         }
         else{
