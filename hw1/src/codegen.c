@@ -53,7 +53,7 @@ void fprint_expr(FILE *target, Expression *expr, SymbolTable *table)
                 fprintf(target,"%d\n",(expr->v).val.ivalue);
                 break;
             case FloatConst:
-                fprintf(target,"%f\n", (expr->v).val.fvalue);
+                fprintf(target,"%.5f\n", (expr->v).val.fvalue);
                 break;
             default:
                 printf("Error In fprint_left_expr. (expr->v).type=%d\n",(expr->v).type);

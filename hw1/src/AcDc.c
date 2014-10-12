@@ -61,7 +61,7 @@ void print_expr(Expression *expr)
                 printf("%d ", (expr->v).val.ivalue);
                 break;
             case FloatConst:
-                printf("%f ", (expr->v).val.fvalue);
+                printf("%.5f ", (expr->v).val.fvalue);
                 break;
             case PlusNode:
                 printf("+ ");

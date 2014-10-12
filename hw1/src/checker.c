@@ -130,7 +130,7 @@ void checkexpression( Expression * expr, SymbolTable * table )
                     }
                     expr->v.type = FloatConst;
                     expr->leftOperand = expr->rightOperand = NULL;
-                    printf("optimize: %f %c %f = %f\n", *a, op, *b, *c);
+                    printf("optimize: %.5f %c %.5f = %.5f\n", *a, op, *b, *c);
                 }
                 break;
             default:
