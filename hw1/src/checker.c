@@ -95,6 +95,47 @@ void checkexpression( Expression * expr, SymbolTable * table )
         convertType(left, type);//left->type = type;//converto
         convertType(right, type);//right->type = type;//converto
         expr->type = type;
+
+        // optimization: constant folding
+        switch (expr->v.type) {
+            case PlusNode:
+            case MinusNode:
+            case MulNode:
+            case DivNode:
+                if (type == Int && left->v.type == IntConst && right->v.type == IntConst) {
+                    int *c = &expr->v.val.ivalue, *a = &left->v.val.ivalue,
+                        *b = &right->v.val.ivalue; // *c = *a <op> *b
+                    char op;
+                    switch (expr->v.type) {
+                        case PlusNode:  *c = *a + *b; op = '+'; break;
+                        case MinusNode: *c = *a - *b; op = '-'; break;
+                        case MulNode:   *c = *a * *b; op = '*'; break;
+                        case DivNode:   *c = *a / *b; op = '/'; break;
+                        default: ;
+                    }
+                    expr->v.type = IntConst;
+                    expr->leftOperand = expr->rightOperand = NULL;
+                    printf("optimize: %d %c %d = %d\n", *a, op, *b, *c);
+                }
+                else if (type == Float && left->v.type == FloatConst && right->v.type == FloatConst) {
+                    float *c = &expr->v.val.fvalue, *a = &left->v.val.fvalue,
+                        *b = &right->v.val.fvalue; // *c = *a <op> *b
+                    char op;
+                    switch (expr->v.type) {
+                        case PlusNode:  *c = *a + *b; op = '+'; break;
+                        case MinusNode: *c = *a - *b; op = '-'; break;
+                        case MulNode:   *c = *a * *b; op = '*'; break;
+                        case DivNode:   *c = *a / *b; op = '/'; break;
+                        default: ;
+                    }
+                    expr->v.type = FloatConst;
+                    expr->leftOperand = expr->rightOperand = NULL;
+                    printf("optimize: %f %c %f = %f\n", *a, op, *b, *c);
+                }
+                break;
+            default:
+                break;
+        }
     }
 }
 
