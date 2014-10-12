@@ -1,4 +1,4 @@
-PROGRAM = File.expand_path("../../src/build/AcDc", __FILE__)
+PROGRAM = File.expand_path("../../src/AcDc", __FILE__)
 TEST_SUITE_DIR = "../../test"
 TEST_NUMBER = 18
 
