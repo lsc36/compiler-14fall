@@ -23,7 +23,7 @@ void fprint_op( FILE *target, ValueType op )
             fprintf(target, "/\n");
             break;
         default:
-            fprintf(target,"Error in fprintf_op ValueType = %d\n",op);
+            printf("Error in fprintf_op ValueType = %d\n",op);
             break;
     }
 }
@@ -56,7 +56,7 @@ void fprint_expr(FILE *target, Expression *expr, SymbolTable *table)
                 fprintf(target,"%f\n", (expr->v).val.fvalue);
                 break;
             default:
-                fprintf(target,"Error In fprint_left_expr. (expr->v).type=%d\n",(expr->v).type);
+                printf("Error In fprint_left_expr. (expr->v).type=%d\n",(expr->v).type);
                 break;
         }
     }
