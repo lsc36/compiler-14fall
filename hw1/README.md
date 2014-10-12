@@ -19,6 +19,8 @@
 sample12 ~ 17 為助教所給的 case1 ~ 6
 
 ## 目前CFG（會更動到完成目標）
+
+```
 Program -> Declarations Statements $
 Declations -> Declaration Declarations
             | lambda
@@ -40,3 +42,4 @@ val -> unary- positiveVal
 positiveVal -> id
 			  | inum
 			  | fnum
+```
