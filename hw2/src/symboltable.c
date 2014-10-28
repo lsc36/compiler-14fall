@@ -74,16 +74,16 @@ void printSym(symtab* ptr)
 void printSymTab()
 {
     int i;
-    printf("----- Symbol Table ---------\n");
-    for (i=0; i<TABLE_SIZE; i++)
-    {
-        symtab* symptr;
-	symptr = hash_table[i];
-	while (symptr != NULL)
+	printf("----- Symbol Table ---------\n");
+	for (i=0; i<TABLE_SIZE; i++)
 	{
-            printf("====>  index = %d \n", i);
-	    printSym(symptr);
-	    symptr=symptr->front;
+		symtab* symptr;
+		symptr = hash_table[i];
+		while (symptr != NULL)
+		{
+			printf("====>  index = %d \n", i);
+			printSym(symptr);
+			symptr=symptr->front;
+		}
 	}
-    }
 }
