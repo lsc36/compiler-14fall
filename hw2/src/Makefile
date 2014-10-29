@@ -1,5 +1,5 @@
 TARGET = scanner
-OBJECT = lex.yy.o symboltable.o 
+OBJECT = lex.yy.c lex.yy.o symboltable.o
 CC = cc -g
 LEX = flex
 LIBS = -lfl 
