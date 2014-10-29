@@ -1,14 +1,14 @@
-%option noyywrap 
+%option noyywrap
 %{
 #include <stdio.h>
-#include "header.h" 
+#include "header.h"
 int linenumber = 1;
 symtab * lookup();
 symtab * ptr;
 void     insertID();
-void 	 printSymTab();
+void     printSymTab();
+void     printFreq();
 
-void comment();
 #define RETURN      1
 #define TYPEDEF     2
 #define IF          3
@@ -50,8 +50,8 @@ void comment();
 
 letter   [A-Za-z]
 digit    [0-9]
-ID	 {letter}({letter}|{digit}|"_")*
-WS	 [ \t]+
+ID       {letter}({letter}|{digit}|"_")*
+WS       [ \t]+
 Int_constant {digit}+
 Float_constant {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
 String_constant \"(\\.|[^\\"])*\"
@@ -78,13 +78,11 @@ error    .
 {Int_constant}  {}
 {Float_constant}    {}
 {String_constant}   {}
-{ID}            { 
-			ptr = lookup(yytext);
-			if (ptr == NULL)
-			     insertID(yytext);	
-			else 
-			     ptr->counter++;
-		}
+{ID}            {
+    ptr = lookup(yytext);
+    if (ptr == NULL) insertID(yytext);
+    else ptr->counter++;
+}
 
 "="             /* return OP_ASSIGN; */
 "||"            /* return OP_OR; */
@@ -119,13 +117,13 @@ error    .
 
 main(int argc, char **argv)
 {
- argc--; ++argv;
-   if (argc > 0)
-      yyin = fopen(argv[0], "r");
-   else
-      yyin = stdin;
-   yylex();
-   printSymTab();
-   printFreq();
+    argc--; ++argv;
+    if (argc > 0)
+        yyin = fopen(argv[0], "r");
+    else
+        yyin = stdin;
+    yylex();
+    /* printSymTab(); */
+    printFreq();
 }
 
