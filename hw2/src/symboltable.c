@@ -9,6 +9,7 @@
 
 symtab * hash_table[TABLE_SIZE];
 extern int linenumber;
+int n_symbols;
 
 int HASH(char * str){
 	int idx=0;
@@ -63,6 +64,8 @@ void insertID(char *name){
 	strcpy(symptr->lexeme,name);
 	symptr->line=linenumber;
 	symptr->counter=1;
+
+	n_symbols++;
 }
 
 void printSym(symtab* ptr) 
@@ -86,4 +89,28 @@ void printSymTab()
 			symptr=symptr->front;
 		}
 	}
+}
+
+int comp_symbol_name(const void *a, const void *b)
+{
+	return strcmp((*(symtab**)a)->lexeme, (*(symtab**)b)->lexeme);
+}
+
+void printFreq()
+{
+	int i, pos;
+	symtab **l_symptr;
+	puts("Frequency of identifiers:");
+	l_symptr = (symtab**)malloc(n_symbols * sizeof(symtab*));
+	pos = 0;
+	for (i = 0; i < TABLE_SIZE; i++)
+	{
+		symtab *symptr;
+		for (symptr = hash_table[i]; symptr != NULL; symptr = symptr->front)
+			l_symptr[pos++] = symptr;
+	}
+	qsort(l_symptr, n_symbols, sizeof(symtab*), comp_symbol_name);
+	for (i = 0; i < n_symbols; i++)
+		printf("%-15s %d\n", l_symptr[i]->lexeme, l_symptr[i]->counter);
+	free(l_symptr);
 }

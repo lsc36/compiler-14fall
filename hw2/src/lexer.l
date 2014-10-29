@@ -53,6 +53,7 @@ ID	 {letter}({letter}|{digit}|"_")*
 WS	 [ \t]+
 Int_constant {digit}+
 Float_constant {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
+/* BUG */
 String_constant \"(\\.|[^\\"])*\"
 
 comment \/\*(\*[^\/]|[^\*])*\*\/
@@ -119,5 +120,6 @@ main(int argc, char **argv)
       yyin = stdin;
    yylex();
    printSymTab();
+   printFreq();
 }
 
