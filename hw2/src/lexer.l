@@ -52,23 +52,16 @@ digit    [0-9]
 ID	 {letter}({letter}|{digit}|"_")*
 WS	 [ \t]+
 Int_constant {digit}+
+Float_constant {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
+String_constant \"(\\.|[^\\"])*\"
 
-RWInt {Int_constant}
-RWFloat {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
-
-/* You need to define the following RE's 
-Float_constant
-String_constant
-comment
-({digit}+)(e(+|-)?{digit}+)|({digit}+(\.{digit}+)(e (+|-)?{digit}+)?)|({digit}+)?(\.{digit}+)(e(+|-)?{digit}+)?
-*/
-
+comment \/\*(\*[^\/]|[^\*])*\*\/
 newline  "\n"
 error    .
 
 %%
 
-"/*"            {comment();}
+{comment}       { puts(yytext); }
 {WS}            {}
 "return"        { /* return RETURN; */ }
 "typedef"       { /* return TYPEDEF; */ }
@@ -79,8 +72,8 @@ error    .
 "union"         { /* return UNION; */ }
 "void"          { /* return VOID; */ }
 "while"         { /* return WHILE; */ }
-{RWInt}         { /*return INT; */ }
-{RWFloat}       { /*return FLOAT;*/ }
+{Int_constant}  { /*return INT; */ }
+{Float_constant}    { /*return FLOAT;*/ }
 {ID}            { 
 			ptr = lookup(yytext);
 			if (ptr == NULL)
@@ -116,16 +109,6 @@ error    .
 {error}         printf("ERR \n");/* return ERROR; */
 
 %%
-
-void comment() {
-    int c;
-    putchar('/'); putchar('*');
-begin:
-    while ((c = input()) && c != '*') putchar(c);
-    putchar('*');
-    if ((c = input()) && c != '/') { unput(c); goto begin; }
-    putchar('/'); putchar('\n');
-}
 
 main(int argc, char **argv)
 {
