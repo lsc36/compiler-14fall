@@ -22,8 +22,27 @@ void comment();
 #define FLOAT       11
 #define OP_ASSIGN   12
 #define OP_OR       13
-#define MK_LPAREN   14
-#define MK_RPAREN   15
+#define OP_AND      14
+#define OP_NOT      15
+#define OP_ADD      16
+#define OP_SUB      17
+#define OP_MUL      18
+#define OP_DIV      19
+#define OP_LT       20
+#define OP_GT       21
+#define OP_LEQ      22
+#define OP_GEQ      23
+#define OP_NEQ      24
+#define OP_EQ       25
+#define MK_LPAREN   26
+#define MK_RPAREN   27
+#define MK_LBRACE   28
+#define MK_RBRACE   29
+#define MK_LBRACK   30
+#define MK_RBRACK   31
+#define MK_SEMICOL  32
+#define MK_COMMA    33
+#define MK_DOT      34
 #define ERROR       100
 
 %}
@@ -44,24 +63,7 @@ comment
 ({digit}+)(e(+|-)?{digit}+)|({digit}+(\.{digit}+)(e (+|-)?{digit}+)?)|({digit}+)?(\.{digit}+)(e(+|-)?{digit}+)?
 */
 
-OP_assign        "="
-OP_or   "||"
-
-/* Other operators appear here */ 
-
-
 newline  "\n"
-
-DL_lparen "("
-DL_rparen ")"
-DL_lbrace "{"
-DL_rbrace "}"
-DL_comma  ","
-DL_semicol ";"
-DL_dot  "."
-
-/* Other separators appear here */
-
 error    .
 
 %%
@@ -87,17 +89,31 @@ error    .
 			     ptr->counter++;
 		}
 
-{OP_assign}     /* return OP_ASSIGN; */ 
-{OP_or}         /* return OP_OR; */
-{DL_lparen}     /* return MK_LPAREN; */
-{DL_rparen}     /* return MK_RPAREN; */
-{DL_lbrace}     /* return MK_LBRACE; */
-{DL_rbrace}     /* return MK_RBRACE; */
-{DL_comma}      {}
-{DL_semicol}    {}
+"="             /* return OP_ASSIGN; */
+"||"            /* return OP_OR; */
+"&&"            /* return OP_AND; */
+"!"             /* return OP_NOT; */
+"+"             /* return OP_ADD; */
+"-"             /* return OP_SUB; */
+"*"             /* return OP_MUL; */
+"/"             /* return OP_DIV; */
+"<"             /* return OP_LT; */
+">"             /* return OP_GT; */
+"<="            /* return OP_LEQ; */
+">="            /* return OP_GEQ; */
+"!="            /* return OP_NEQ; */
+"=="            /* return OP_EQ; */
+"("             /* return MK_LPAREN; */
+")"             /* return MK_RPAREN; */
+"{"             /* return MK_LBRACE; */
+"}"             /* return MK_RBRACE; */
+"["             /* return MK_LBRACK; */
+"]"             /* return MK_RBRACK; */
+";"             /* return MK_SEMICOL; */
+","             /* return MK_COMMA; */
+"."             /* return MK_DOT; */
 {newline}       linenumber += 1;
 {error}         printf("ERR \n");/* return ERROR; */
-
 
 %%
 
