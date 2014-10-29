@@ -56,7 +56,7 @@ Int_constant {digit}+
 Float_constant {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
 String_constant \"(\\.|[^\\"])*\"
 
-comment \/\*(\*[^\/]|[^\*])*\*\/
+comment \/\*(\*+[^\/]|[^\*])*\*\/
 newline  "\n"
 error    .
 
