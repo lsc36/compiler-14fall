@@ -111,6 +111,7 @@ error    .
 {error}         {
     printf("error on line %d: \"%s\"\n", linenumber, yytext);
     /* return ERROR; */
+    exit(1);
 }
 
 %%
