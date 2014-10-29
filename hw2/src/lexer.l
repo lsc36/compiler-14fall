@@ -2,7 +2,7 @@
 %{
 #include <stdio.h>
 #include "header.h" 
-int linenumber;
+int linenumber = 1;
 symtab * lookup();
 symtab * ptr;
 void     insertID();
@@ -107,7 +107,10 @@ error    .
 ","             /* return MK_COMMA; */
 "."             /* return MK_DOT; */
 {newline}       linenumber += 1;
-{error}         printf("ERR \n");/* return ERROR; */
+{error}         {
+    printf("error on line %d: \"%s\"\n", linenumber, yytext);
+    /* return ERROR; */
+}
 
 %%
 
