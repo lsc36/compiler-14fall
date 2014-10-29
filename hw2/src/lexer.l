@@ -9,14 +9,22 @@ void     insertID();
 void 	 printSymTab();
 
 void comment();
-/* You need to define for all tokens in C--, here are some examples */
-#define INT		10
-#define FLOAT 		11 
-#define OP_ASSIGN 	12 
-#define OP_OR 		13 
-#define MK_LPAREN 	14 
-#define MK_RPAREN 	15 
-#define ERROR 		100 
+#define RETURN      1
+#define TYPEDEF     2
+#define IF          3
+#define ELSE        4
+#define FOR         5
+#define STRUCT      6
+#define UNION       7
+#define VOID        8
+#define WHILE       9
+#define INT         10
+#define FLOAT       11
+#define OP_ASSIGN   12
+#define OP_OR       13
+#define MK_LPAREN   14
+#define MK_RPAREN   15
+#define ERROR       100
 
 %}
 
@@ -60,6 +68,15 @@ error    .
 
 "/*"            {comment();}
 {WS}            {}
+"return"        { /* return RETURN; */ }
+"typedef"       { /* return TYPEDEF; */ }
+"if"            { /* return IF; */ }
+"else"          { /* return ELSE; */ }
+"for"           { /* return FOR; */ }
+"struct"        { /* return STRUCT; */ }
+"union"         { /* return UNION; */ }
+"void"          { /* return VOID; */ }
+"while"         { /* return WHILE; */ }
 {RWInt}         { /*return INT; */ }
 {RWFloat}       { /*return FLOAT;*/ }
 {ID}            { 
