@@ -7,6 +7,8 @@ symtab * lookup();
 symtab * ptr;
 void     insertID();
 void 	 printSymTab();
+
+void comment();
 /* You need to define for all tokens in C--, here are some examples */
 #define INT		10
 #define FLOAT 		11 
@@ -24,10 +26,14 @@ ID	 {letter}({letter}|{digit}|"_")*
 WS	 [ \t]+
 Int_constant {digit}+
 
+RWInt {Int_constant}
+RWFloat {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
+
 /* You need to define the following RE's 
 Float_constant
 String_constant
 comment
+({digit}+)(e(+|-)?{digit}+)|({digit}+(\.{digit}+)(e (+|-)?{digit}+)?)|({digit}+)?(\.{digit}+)(e(+|-)?{digit}+)?
 */
 
 OP_assign        "="
@@ -52,9 +58,10 @@ error    .
 
 %%
 
+"/*"            {comment();}
 {WS}            {}
-{RWInt}         {/* return INT; */ }
-{RWFloat}       {/* return FLOAT; */}
+{RWInt}         { /*return INT; */ }
+{RWFloat}       { /*return FLOAT;*/ }
 {ID}            { 
 			ptr = lookup(yytext);
 			if (ptr == NULL)
@@ -76,6 +83,30 @@ error    .
 
 
 %%
+
+/* TODO: infinite memory for buf, or reuse buffer */
+
+void comment() {
+	char buffer[4096];
+	buffer[0] = '/';
+	buffer[1] = '*';
+	int count = 2;
+	while (1) {
+		char c = input();
+		if ((c == '/' && buffer[count - 1] == '*')) {
+			buffer[count++] = c;
+			buffer[count] = '\0';
+			break;
+		}
+		else if (c == EOF){
+			break;
+		}
+		else {
+			buffer[count++] = c;
+		}
+	}
+	printf("%s\n", buffer);
+}
 
 main(int argc, char **argv)
 {
