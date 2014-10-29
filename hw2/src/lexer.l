@@ -20,29 +20,30 @@ void comment();
 #define WHILE       9
 #define INT         10
 #define FLOAT       11
-#define OP_ASSIGN   12
-#define OP_OR       13
-#define OP_AND      14
-#define OP_NOT      15
-#define OP_ADD      16
-#define OP_SUB      17
-#define OP_MUL      18
-#define OP_DIV      19
-#define OP_LT       20
-#define OP_GT       21
-#define OP_LEQ      22
-#define OP_GEQ      23
-#define OP_NEQ      24
-#define OP_EQ       25
-#define MK_LPAREN   26
-#define MK_RPAREN   27
-#define MK_LBRACE   28
-#define MK_RBRACE   29
-#define MK_LBRACK   30
-#define MK_RBRACK   31
-#define MK_SEMICOL  32
-#define MK_COMMA    33
-#define MK_DOT      34
+#define STRING      12
+#define OP_ASSIGN   21
+#define OP_OR       22
+#define OP_AND      23
+#define OP_NOT      24
+#define OP_ADD      25
+#define OP_SUB      26
+#define OP_MUL      27
+#define OP_DIV      28
+#define OP_LT       29
+#define OP_GT       30
+#define OP_LEQ      31
+#define OP_GEQ      32
+#define OP_NEQ      33
+#define OP_EQ       34
+#define MK_LPAREN   41
+#define MK_RPAREN   42
+#define MK_LBRACE   43
+#define MK_RBRACE   44
+#define MK_LBRACK   45
+#define MK_RBRACK   46
+#define MK_SEMICOL  47
+#define MK_COMMA    48
+#define MK_DOT      49
 #define ERROR       100
 
 %}
@@ -53,7 +54,6 @@ ID	 {letter}({letter}|{digit}|"_")*
 WS	 [ \t]+
 Int_constant {digit}+
 Float_constant {digit}+e(\+|-)?{digit}+|{digit}+(\.{digit}+)(e(\+|-)?{digit}+)?|({digit}+)?(\.{digit}+)(e(\+|-)?{digit}+)?
-/* BUG */
 String_constant \"(\\.|[^\\"])*\"
 
 comment \/\*(\*[^\/]|[^\*])*\*\/
@@ -73,8 +73,11 @@ error    .
 "union"         { /* return UNION; */ }
 "void"          { /* return VOID; */ }
 "while"         { /* return WHILE; */ }
-{Int_constant}  { /*return INT; */ }
-{Float_constant}    { /*return FLOAT;*/ }
+"int"           { /* return INT; */ }
+"float"         { /* return FLOAT; */ }
+{Int_constant}  {}
+{Float_constant}    {}
+{String_constant}   {}
 {ID}            { 
 			ptr = lookup(yytext);
 			if (ptr == NULL)
