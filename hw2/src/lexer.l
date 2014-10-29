@@ -117,28 +117,14 @@ error    .
 
 %%
 
-/* TODO: infinite memory for buf, or reuse buffer */
-
 void comment() {
-	char buffer[4096];
-	buffer[0] = '/';
-	buffer[1] = '*';
-	int count = 2;
-	while (1) {
-		char c = input();
-		if ((c == '/' && buffer[count - 1] == '*')) {
-			buffer[count++] = c;
-			buffer[count] = '\0';
-			break;
-		}
-		else if (c == EOF){
-			break;
-		}
-		else {
-			buffer[count++] = c;
-		}
-	}
-	printf("%s\n", buffer);
+    int c;
+    putchar('/'); putchar('*');
+begin:
+    while ((c = input()) && c != '*') putchar(c);
+    putchar('*');
+    if ((c = input()) && c != '/') { unput(c); goto begin; }
+    putchar('/'); putchar('\n');
 }
 
 main(int argc, char **argv)
