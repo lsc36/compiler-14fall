@@ -11,6 +11,7 @@ AST_NODE *prog;
 
 extern int g_anyErrorOccur;
 
+// 合併 node a, node b 之兄弟，a 在左，b在右 
 static inline AST_NODE* makeSibling(AST_NODE *a, AST_NODE *b)
 { 
     while (a->rightSibling) {
@@ -132,6 +133,7 @@ static inline AST_NODE* makeExprNode(EXPR_KIND exprKind, int operationEnumValue)
 %token OP_NE   
 %token OP_GT   
 %token OP_LT   
+
 %token OP_GE   
 %token OP_LE   
 %token OP_PLUS 
