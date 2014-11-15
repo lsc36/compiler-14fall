@@ -153,7 +153,7 @@ static inline AST_NODE* makeExprNode(EXPR_KIND exprKind, int operationEnumValue)
 %token RETURN
 
 %type <node> program global_decl_list global_decl function_decl block stmt_list decl_list decl var_decl type init_id_list init_id  stmt relop_expr relop_term relop_factor expr term factor var_ref
-%type <node> param_list param dim_fn expr_null id_list dim_decl cexpr mcexpr cfactor assign_expr_list test assign_expr rel_op relop_expr_list nonempty_relop_expr_list
+%type <node> param_list param dim_fn expr_null id_list dim_decl cexpr mcexpr cfactor assign_expr_list /*test*/ assign_expr rel_op relop_expr_list nonempty_relop_expr_list
 %type <node> add_op mul_op dim_list type_decl nonempty_assign_expr_list
 
 
@@ -188,6 +188,7 @@ global_decl	: decl_list function_decl
                 }
             ;
 
+            // 何不把VOID加入type，空字串加入param_list
 function_decl	: type ID MK_LPAREN param_list MK_RPAREN MK_LBRACE block MK_RBRACE     
                     {
                         $$ = makeDeclNode(FUNCTION_DECL);
@@ -231,6 +232,8 @@ param		: type ID
                     /*TODO*/
                 }
             ;
+            // MK_LB 為左方括
+            // dim_fn 為陣列下標
 dim_fn		: MK_LB expr_null MK_RB 
                 {
                     $$ = $2;
@@ -345,6 +348,7 @@ dim_decl	: MK_LB cexpr MK_RB
             | .......
             */
             ;
+/* 跟 expr 差在 cexpr 只允許常數，這大概是 const_expr 的縮寫 */
 cexpr		: cexpr OP_PLUS mcexpr 
                 {
                     $$ = makeExprNode(BINARY_OPERATION, BINARY_OP_ADD);
@@ -469,11 +473,11 @@ nonempty_assign_expr_list        : nonempty_assign_expr_list MK_COMMA assign_exp
                                     }
                                  ;
 
-test		: assign_expr
-                {
-                    $$ = $1;
-                }
-            ;
+/*test		: assign_expr*/
+/*                {*/
+/*                    $$ = $1;*/
+/*                }*/
+/*            ;*/
 
 assign_expr     : ID OP_ASSIGN relop_expr 
                     {
@@ -622,6 +626,7 @@ factor		: MK_LPAREN relop_expr MK_RPAREN
                 {
                     /*TODO*/
                 }
+			/*function call*/
             | ID MK_LPAREN relop_expr_list MK_RPAREN 
                 {
                     /*TODO*/
