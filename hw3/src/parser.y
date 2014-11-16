@@ -228,7 +228,7 @@ param_list	: param_list MK_COMMA  param
                 }
             | param	
                 {
-                    /*TODO*/
+					$$ = $1;
                 }
             ;
 
@@ -239,7 +239,10 @@ param		: type ID
                 }
             | type ID dim_fn 
                 {
-                    /*TODO*/
+                    $$ = makeDeclNode(FUNCTION_PARAMETER_DECL);
+					AST_NODE *id_dim = makeIDNode($2, NORMAL_ID);
+					makeChild(id_dim, $3);
+                    makeFamily($$, 2, $1, id_dim);
                 }
             ;
             // MK_LB 為左方括
