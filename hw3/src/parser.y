@@ -355,20 +355,24 @@ id_list		: ID
                 }
             | id_list MK_COMMA ID dim_decl
                 {
-                    /*TODO*/
+                    AST_NODE* id = makeIDNode($3, ARRAY_ID);
+					$$ = makeSibling($1, makeChild(id, $4));
                 }
             | ID dim_decl
                 {
-                    /*TODO*/
+                    $$ = makeIDNode($1, ARRAY_ID);
+					makeChild($$, $2);
                 }
 		;
 dim_decl	: MK_LB cexpr MK_RB 
                 {
-                    /*TODO*/
+					$$ = $2;
                 } 
-            /*TODO: Try if you can define a recursive production rule
-            | .......
-            */
+            | dim_decl MK_LB cexpr MK_RB
+				{
+					$$ = $1;
+					makeSibling($$, $3);
+				}
             ;
 /* 跟 expr 差在 cexpr 只允許常數，這大概是 const_expr 的縮寫 */
 cexpr		: cexpr OP_PLUS mcexpr 
@@ -378,34 +382,38 @@ cexpr		: cexpr OP_PLUS mcexpr
                 } /* This is for array declarations */ 
             | cexpr OP_MINUS mcexpr
                 {
-                    /*TODO*/
+                    $$ = makeExprNode(BINARY_OPERATION, BINARY_OP_SUB);
+                    makeFamily($$, 2, $1, $3);
                 } 
             | mcexpr 
                 {
-                    /*TODO*/
+					$$ = $1;
                 }
             ;  
 mcexpr		: mcexpr OP_TIMES cfactor 
                 {
-                    /*TODO*/
+                    $$ = makeExprNode(BINARY_OPERATION, BINARY_OP_MUL);
+                    makeFamily($$, 2, $1, $3);
                 }
             | mcexpr OP_DIVIDE cfactor 
                 {
-                    /*TODO*/
+                    $$ = makeExprNode(BINARY_OPERATION, BINARY_OP_DIV);
+                    makeFamily($$, 2, $1, $3);
                 }
             | cfactor 
                 {
-                    /*TODO*/
+					$$ = $1;
                 }
             ;
         
 cfactor:	CONST 
                 {
-                    /*TODO*/
+                    $$ = Allocate(CONST_VALUE_NODE);
+                    $$->semantic_value.const1=$1;
                 }
             | MK_LPAREN cexpr MK_RPAREN 
                 {
-                    /*TODO*/
+					$$ = $2;
                 }
             ;
 
