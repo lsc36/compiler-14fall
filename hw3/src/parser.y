@@ -462,7 +462,7 @@ stmt		: MK_LBRACE block MK_RBRACE
 
 			| WHILE MK_LPAREN relop_expr_list MK_RPAREN stmt
 				{
-					
+					/*TODO*/
 				}
             | FOR MK_LPAREN assign_expr_list MK_SEMICOLON relop_expr_list MK_SEMICOLON assign_expr_list MK_RPAREN stmt
 			/*$1    $2           $3               $4            $5             $6             $7           $8      $9*/
@@ -653,7 +653,7 @@ mul_op		: OP_TIMES
 
 factor		: MK_LPAREN relop_expr MK_RPAREN
                 {
-                    /*TODO*/
+					$$ = $2;
                 }
             /*TODO: | -(<relop_expr>) e.g. -(4) */
             | OP_NOT MK_LPAREN relop_expr MK_RPAREN
@@ -682,7 +682,7 @@ factor		: MK_LPAREN relop_expr MK_RPAREN
                 }
             | var_ref 
                 {
-                    /*TODO*/
+					$$ = $1;
                 }
             /*TODO: | -<var_ref> e.g. -var */
             | OP_NOT var_ref 
@@ -693,22 +693,23 @@ factor		: MK_LPAREN relop_expr MK_RPAREN
 
 var_ref		: ID 
                 {
-                    /*TODO*/
+					$$ = makeIDNode($1, NORMAL_ID);
                 }
             | ID dim_list 
                 {
-                    /*TODO*/
+					$$ = makeIDNode($1, ARRAY_ID);
+					makeChild($$, $2);
                 }
             ;
 
 
 dim_list	: dim_list MK_LB expr MK_RB 
                 {
-                    /*TODO*/
+					$$ = makeSibling($1, $3);
                 }
             | MK_LB expr MK_RB
                 {
-                    /*TODO*/
+					$$ = $2;
                 }
 		;
 
