@@ -476,8 +476,16 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = makeStmtNode(ASSIGN_STMT);
                     makeFamily($$, 2, $1, $3);
                 }
-            /*TODO: | If Statement */
-            /*TODO: | If then else */
+            | IF MK_LPAREN relop_expr_list MK_RPAREN stmt
+                {
+                    $$ = makeStmtNode(IF_STMT);
+                    makeFamily($$, 2, $3, $5);
+                }
+            | IF MK_LPAREN relop_expr_list MK_RPAREN stmt ELSE stmt
+                {
+                    $$ = makeStmtNode(IF_STMT);
+                    makeFamily($$, 3, $3, $5, $7);
+                }
             /*TODO: | function call */
             | MK_SEMICOLON
                 {
