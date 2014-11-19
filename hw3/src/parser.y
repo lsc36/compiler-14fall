@@ -486,7 +486,6 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = makeStmtNode(IF_STMT);
                     makeFamily($$, 3, $3, $5, $7);
                 }
-            /*TODO: | function call */
             | MK_SEMICOLON
                 {
                     $$ = Allocate(NUL_NODE);
@@ -500,6 +499,7 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = makeStmtNode(RETURN_STMT);
                     makeFamily($$, 1, $2);
                 }
+            /* function call goes here */
             | relop_expr_list MK_SEMICOLON
                 {
                     $$ = $1;
