@@ -7,9 +7,9 @@ int main() {
 	for (i = 0; a[3][i] != 0; ) {
 		
 	}
-	/* for (i=0, p=4+4; i<9; i=i+1, p=i) { */
-	/* 	write("test"); */
-	/* } */
+	for (i=0, p=4+4; i<9; i=i+1, p=i) {
+		write("test");
+	}
 	for (;;) {
 		/*empty*/
 	}
