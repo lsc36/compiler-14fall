@@ -662,45 +662,34 @@ factor        : MK_LPAREN relop_expr MK_RPAREN
                 {
                     $$ = $2;
                 }
-            /*TODO: | -(<relop_expr>) e.g. -(4) */
-            | OP_NOT MK_LPAREN relop_expr MK_RPAREN
-                {
-                    $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_LOGICAL_NEGATION);
-                    makeChild($$, $3);
-                }
             | CONST
                 {
                     $$ = Allocate(CONST_VALUE_NODE);
                     $$->semantic_value.const1=$1;
                 }
-            /*TODO: | -<constant> e.g. -4 */
-            | OP_NOT CONST
-                {
-                    AST_NODE *const_node = Allocate(CONST_VALUE_NODE);
-                    const_node->semantic_value.const1 = $2;
-                    $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_LOGICAL_NEGATION);
-                    makeChild($$, const_node);
-                }
             /*function call*/
             | ID MK_LPAREN relop_expr_list MK_RPAREN
                 {
                     $$ = makeStmtNode(FUNCTION_CALL_STMT);
-                    makeChild($$, $3);
-                }
-            /*TODO: | -<function call> e.g. -f(4) */
-            | OP_NOT ID MK_LPAREN relop_expr_list MK_RPAREN
-                {
-                    AST_NODE *func_stmt_node = makeStmtNode(FUNCTION_CALL_STMT);
-                    makeFamily(func_stmt_node, 1, $4);
-                    $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_LOGICAL_NEGATION);
-                    makeChild($$, func_stmt_node);
+                    AST_NODE *id_node = makeIDNode($1, NORMAL_ID);
+                    makeFamily($$, 2, id_node, $3);
                 }
             | var_ref
                 {
                     $$ = $1;
                 }
-            /*TODO: | -<var_ref> e.g. -var */
-            | OP_NOT var_ref
+            /* unary ops */
+            | OP_PLUS factor
+                {
+                    $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_POSITIVE);
+                    makeChild($$, $2);
+                }
+            | OP_MINUS factor
+                {
+                    $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_NEGATIVE);
+                    makeChild($$, $2);
+                }
+            | OP_NOT factor
                 {
                     $$ = makeExprNode(UNARY_OPERATION, UNARY_OP_LOGICAL_NEGATION);
                     makeChild($$, $2);
