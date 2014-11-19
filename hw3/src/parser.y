@@ -500,7 +500,7 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = makeStmtNode(RETURN_STMT);
                     makeFamily($$, 1, $2);
                 }
-            | expr MK_SEMICOLON
+            | relop_expr_list MK_SEMICOLON
                 {
                     $$ = $1;
                 }
