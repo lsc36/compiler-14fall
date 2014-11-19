@@ -460,13 +460,13 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = $2;
                 }
 
-            | WHILE MK_LPAREN relop_expr_list MK_RPAREN stmt
+            | WHILE MK_LPAREN nonempty_relop_expr_list MK_RPAREN stmt
                 {
                     $$ = makeStmtNode(WHILE_STMT);
                     makeFamily($$, 2, $3, $5);
                 }
             | FOR MK_LPAREN assign_expr_list MK_SEMICOLON relop_expr_list MK_SEMICOLON assign_expr_list MK_RPAREN stmt
-            /*$1    $2           $3               $4            $5             $6             $7           $8      $9*/
+            /*$1  $2        $3               $4           $5              $6           $7               $8        $9*/
                 {
                     $$ = makeStmtNode(FOR_STMT);
                     makeFamily($$, 4, $3, $5, $7, $9);
@@ -476,12 +476,12 @@ stmt        : MK_LBRACE block MK_RBRACE
                     $$ = makeStmtNode(ASSIGN_STMT);
                     makeFamily($$, 2, $1, $3);
                 }
-            | IF MK_LPAREN relop_expr_list MK_RPAREN stmt
+            | IF MK_LPAREN nonempty_relop_expr_list MK_RPAREN stmt
                 {
                     $$ = makeStmtNode(IF_STMT);
                     makeFamily($$, 2, $3, $5);
                 }
-            | IF MK_LPAREN relop_expr_list MK_RPAREN stmt ELSE stmt
+            | IF MK_LPAREN nonempty_relop_expr_list MK_RPAREN stmt ELSE stmt
                 {
                     $$ = makeStmtNode(IF_STMT);
                     makeFamily($$, 3, $3, $5, $7);
@@ -500,7 +500,7 @@ stmt        : MK_LBRACE block MK_RBRACE
                     makeFamily($$, 1, $2);
                 }
             /* function call goes here */
-            | relop_expr_list MK_SEMICOLON
+            | nonempty_relop_expr_list MK_SEMICOLON
                 {
                     $$ = $1;
                 }
