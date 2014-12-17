@@ -95,8 +95,8 @@ typedef struct SymbolTable
 
 void initializeSymbolTable();
 void symbolTableEnd();
-SymbolTableEntry* retrieveSymbol(char* symbolName);
-SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute);
+SymbolTableEntry* retrieveSymbol(char* symbolName); // 取得符號
+SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute); // 增加符號
 void removeSymbol(char* symbolName);
 int declaredLocally(char* symbolName);
 void openScope();

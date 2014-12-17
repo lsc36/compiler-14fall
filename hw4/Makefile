@@ -17,7 +17,7 @@ semanticAnalysis.o: semanticAnalysis.c symbolTable.o
 	$(CC) -c semanticAnalysis.c
 
 symbolTable.o: symbolTable.c
-	$(CC) -c symbolTable.c
+	$(CC) -std=c11 -c symbolTable.c
 
 lex.yy.c: lexer3.l
 	$(LEX) lexer3.l
