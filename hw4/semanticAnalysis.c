@@ -232,6 +232,8 @@ void processTypeNode(AST_NODE* idNodeAsType)
     SymbolTableEntry *sym = retrieveSymbol(typeName);
     if (sym == NULL) {
         printErrorMsg(idNodeAsType, SYMBOL_UNDECLARED);
+        // set to void to prevent segfault
+        setIdSymtabEntry(idNodeAsType, retrieveSymbol("void"));
     } else {
         if (sym->attribute->attributeKind != TYPE_ATTRIBUTE) {
             printErrorMsg(idNodeAsType, SYMBOL_IS_NOT_TYPE);
@@ -247,7 +249,6 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
     // children: IDENTIFIER_NODE (type), IDENTIFIER_NODE (id) * n
     AST_NODE *idNode = typeNode->rightSibling;
     processTypeNode(typeNode);
-    // XXX: segfault?
     DATA_TYPE dataType = getIdSymtabEntry(typeNode)->attribute->attr.typeDescriptor->properties.dataType;
 
     for (; idNode != NULL; idNode = idNode->rightSibling) {
@@ -268,6 +269,9 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
 
         if (checkRedeclared(idNode, 1)) {
             setIdSymtabEntry(idNode, enterSymbol(id, symAttr));
+        } else {
+            // ignore, use predefined symbol
+            setIdSymtabEntry(idNode, retrieveSymbol(id));
         }
     }
 }
@@ -453,11 +457,13 @@ void declareFunction(AST_NODE* returnTypeNode)
     symAttr->attr.functionSignature = malloc(sizeof(FunctionSignature));
     symAttr->attr.functionSignature->parametersCount = numParams;
     symAttr->attr.functionSignature->parameterList = paramList;
-    // XXX: segfault?
     symAttr->attr.functionSignature->returnType = getIdSymtabEntry(returnTypeNode)->attribute->attr.typeDescriptor->properties.dataType;
 
     if (checkRedeclared(idNode, 0)) {
         setIdSymtabEntry(idNode, enterSymbol(id, symAttr));
+    } else {
+        // ignore, use predefined symbol
+        setIdSymtabEntry(idNode, retrieveSymbol(id));
     }
 
     visitChildren(blockNode);
@@ -501,6 +507,7 @@ void processParamListNode(AST_NODE* paramListNode)
 
 void processVarDeclListNode(AST_NODE* varDeclListNode)
 {
+    visitChildren(varDeclListNode);
 }
 
 
