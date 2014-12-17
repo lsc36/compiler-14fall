@@ -42,3 +42,5 @@ functions.o: functions.c
 clean:
 	rm -f $(TARGET) $(OBJECT) $(OUTPUT)
 
+graph:
+	dot -Tpng AST_Graph.gv > AST_Graph.png
