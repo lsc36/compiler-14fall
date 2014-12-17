@@ -14,7 +14,7 @@ void processProgramNode(AST_NODE *programNode);
 void processDeclarationNode(AST_NODE* declarationNode);
 void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttribute, int ignoreArrayFirstDimSize);
 void declareFunction(AST_NODE* returnTypeNode);
-void processDeclDimList(AST_NODE* variableDeclDimList, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize);
+void processDeclDimList(AST_NODE* varDeclDimListNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize);
 void processTypeNode(AST_NODE* typeNode);
 void processIdentifierNode(AST_NODE* identifierNode);
 void processParamListNode(AST_NODE* paramListNode);
@@ -174,10 +174,27 @@ DATA_TYPE getBiggerType(DATA_TYPE dataType1, DATA_TYPE dataType2)
 
 void processProgramNode(AST_NODE *programNode)
 {
+    visitChildren(programNode);
 }
 
 void processDeclarationNode(AST_NODE* declarationNode)
 {
+    switch (declarationNode->semantic_value.declSemanticValue.kind) {
+        case VARIABLE_DECL:
+            declareIdList(declarationNode->child, VARIABLE_ATTRIBUTE, 0);
+            break;
+        case TYPE_DECL:
+            declareIdList(declarationNode->child, TYPE_ATTRIBUTE, 0);
+            break;
+        case FUNCTION_DECL:
+            declareFunction(declarationNode->child);
+            break;
+        case FUNCTION_PARAMETER_DECL:
+            declareIdList(declarationNode->child, VARIABLE_ATTRIBUTE, 1);
+            break;
+        default:
+            ;
+    }
 }
 
 
@@ -186,8 +203,24 @@ void processTypeNode(AST_NODE* idNodeAsType)
 }
 
 
-void declareIdList(AST_NODE* declarationNode, SymbolAttributeKind isVariableOrTypeAttribute, int ignoreArrayFirstDimSize)
+void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttribute, int ignoreArrayFirstDimSize)
 {
+    // children: IDENTIFIER_NODE (type), IDENTIFIER_NODE (id) * n
+    AST_NODE *idNode = typeNode->rightSibling;
+    switch (isVariableOrTypeAttribute) {
+        case VARIABLE_ATTRIBUTE:
+            for (; idNode != NULL; idNode = idNode->rightSibling) {
+                // TODO
+            }
+            break;
+        case TYPE_ATTRIBUTE:
+            for (; idNode != NULL; idNode = idNode->rightSibling) {
+                // TODO
+            }
+            break;
+        default:
+            ;
+    }
 }
 
 void checkAssignOrExpr(AST_NODE* assignOrExprRelatedNode)
@@ -265,11 +298,36 @@ void checkReturnStmt(AST_NODE* returnNode)
 
 void processBlockNode(AST_NODE* blockNode)
 {
+    openScope();
+    visitChildren(blockNode);
+    closeScope();
 }
 
 
 void processStmtNode(AST_NODE* stmtNode)
 {
+    switch (stmtNode->semantic_value.stmtSemanticValue.kind) {
+        case WHILE_STMT:
+            checkWhileStmt(stmtNode);
+            break;
+        case FOR_STMT:
+            checkForStmt(stmtNode);
+            break;
+        case ASSIGN_STMT:
+            checkAssignmentStmt(stmtNode);
+            break;
+        case IF_STMT:
+            checkIfStmt(stmtNode);
+            break;
+        case FUNCTION_CALL_STMT:
+            checkFunctionCall(stmtNode);
+            break;
+        case RETURN_STMT:
+            checkReturnStmt(stmtNode);
+            break;
+        default:
+            ;
+    }
 }
 
 
@@ -277,18 +335,54 @@ void processGeneralNode(AST_NODE *node)
 {
 }
 
-void processDeclDimList(AST_NODE* idNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize)
+void processDeclDimList(AST_NODE* varDeclDimListNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize)
 {
 }
 
 
-void declareFunction(AST_NODE* declarationNode)
+void declareFunction(AST_NODE* returnTypeNode)
 {
+    AST_NODE *idNode, *paramListNode, *blockNode, *paramNode;
+    idNode = returnTypeNode->rightSibling;
+    paramListNode = idNode->rightSibling;
+    blockNode = paramListNode->rightSibling;
+
+    // TODO
+    openScope();
+    visitChildren(paramListNode);
+    visitChildren(blockNode);
+    closeScope();
 }
 
 
 void processIdentifierNode(AST_NODE* identifierNode)
 {
+    const char *TYPES[] = {"void", "int", "float", NULL};
+    char *id = identifierNode->semantic_value.identifierSemanticValue.identifierName;
+    TypeDescriptor *typeDescriptor;
+    int i;
+    for (i = 0; TYPES[i] != NULL; i++) {
+        if (strcmp(id, TYPES[i]) == 0) {
+            processTypeNode(identifierNode);
+            return;
+        }
+    }
+
+    switch (identifierNode->semantic_value.identifierSemanticValue.kind) {
+        case NORMAL_ID:
+            // TODO
+            break;
+        case ARRAY_ID:
+            typeDescriptor = malloc(sizeof(TypeDescriptor));
+            processDeclDimList(identifierNode, typeDescriptor, 0);
+            // TODO
+            break;
+        case WITH_INIT_ID:
+            // TODO
+            break;
+        default:
+            ;
+    }
 }
 
 
