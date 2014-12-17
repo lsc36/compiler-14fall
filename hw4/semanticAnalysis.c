@@ -8,13 +8,19 @@
 int g_anyErrorOccur = 0;
 
 DATA_TYPE getBiggerType(DATA_TYPE dataType1, DATA_TYPE dataType2);
+void visit(AST_NODE *node);
+void visitChildren(AST_NODE *node);
 void processProgramNode(AST_NODE *programNode);
 void processDeclarationNode(AST_NODE* declarationNode);
 void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttribute, int ignoreArrayFirstDimSize);
 void declareFunction(AST_NODE* returnTypeNode);
 void processDeclDimList(AST_NODE* variableDeclDimList, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize);
 void processTypeNode(AST_NODE* typeNode);
+void processIdentifierNode(AST_NODE* identifierNode);
+void processParamListNode(AST_NODE* paramListNode);
 void processBlockNode(AST_NODE* blockNode);
+void processVarDeclListNode(AST_NODE* varDeclListNode);
+void processStmtListNode(AST_NODE* stmtListNode);
 void processStmtNode(AST_NODE* stmtNode);
 void processGeneralNode(AST_NODE *node);
 void checkAssignOrExpr(AST_NODE* assignOrExprRelatedNode);
@@ -31,6 +37,8 @@ void processExprNode(AST_NODE* exprNode);
 void processVariableLValue(AST_NODE* idNode);
 void processVariableRValue(AST_NODE* idNode);
 void processConstValueNode(AST_NODE* constValueNode);
+void processNonemptyAssignExprListNode(AST_NODE* node);
+void processNonemptyRelOpExprListNode(AST_NODE* node);
 void getExprOrConstValue(AST_NODE* exprOrConstNode, int* iValue, float* fValue);
 void evaluateExprValue(AST_NODE* exprNode);
 
@@ -89,6 +97,62 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
         break;
     }
     */
+}
+
+
+void visit(AST_NODE *node)
+{
+    switch (node->nodeType) {
+        case PROGRAM_NODE:
+            processProgramNode(node);
+            break;
+        case DECLARATION_NODE:
+            processDeclarationNode(node);
+            break;
+        case IDENTIFIER_NODE:
+            processIdentifierNode(node);
+            break;
+        case PARAM_LIST_NODE:
+            processParamListNode(node);
+            break;
+        case NUL_NODE:
+            break;
+        case BLOCK_NODE:
+            processBlockNode(node);
+            break;
+        case VARIABLE_DECL_LIST_NODE:
+            processVarDeclListNode(node);
+            break;
+        case STMT_LIST_NODE:
+            processStmtListNode(node);
+            break;
+        case STMT_NODE:
+            processStmtNode(node);
+            break;
+        case EXPR_NODE:
+            processExprNode(node);
+            break;
+        case CONST_VALUE_NODE:
+            processConstValueNode(node);
+            break;
+        case NONEMPTY_ASSIGN_EXPR_LIST_NODE:
+            processNonemptyAssignExprListNode(node);
+            break;
+        case NONEMPTY_RELOP_EXPR_LIST_NODE:
+            processNonemptyRelOpExprListNode(node);
+            break;
+        default:
+            ;
+    }
+}
+
+
+void visitChildren(AST_NODE *node)
+{
+    AST_NODE *child;
+    for (child = node->child; child != NULL; child = child->rightSibling) {
+        visit(child);
+    }
 }
 
 
@@ -219,5 +283,35 @@ void processDeclDimList(AST_NODE* idNode, TypeDescriptor* typeDescriptor, int ig
 
 
 void declareFunction(AST_NODE* declarationNode)
+{
+}
+
+
+void processIdentifierNode(AST_NODE* identifierNode)
+{
+}
+
+
+void processParamListNode(AST_NODE* paramListNode)
+{
+}
+
+
+void processVarDeclListNode(AST_NODE* varDeclListNode)
+{
+}
+
+
+void processStmtListNode(AST_NODE* stmtListNode)
+{
+}
+
+
+void processNonemptyAssignExprListNode(AST_NODE* node)
+{
+}
+
+
+void processNonemptyRelOpExprListNode(AST_NODE* node)
 {
 }
