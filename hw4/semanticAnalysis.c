@@ -46,6 +46,9 @@ int checkRedeclared(AST_NODE *idNode, int checkLocal);
 char *getIdName(AST_NODE *idNode);
 SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode);
 void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym);
+IDENTIFIER_KIND getIdKind(AST_NODE *idNode);
+void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind);
+void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym);
 
 
 typedef enum ErrorMsgKind
@@ -106,11 +109,17 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
     case SYMBOL_UNDECLARED:
         printf("ID %s undeclared.\n", getIdName(node));
         break;
+    case INCOMPATIBLE_ARRAY_DIMENSION:
+        printf("Incompatible array dimensions for array ID %s.\n", getIdName(node));
+        break;
     case ARRAY_SIZE_NOT_INT:
         printf("Array dimensions of ID %s is not integer.\n", getIdName(node));
         break;
     case ARRAY_SIZE_NEGATIVE:
         printf("Array dimensions of ID %s is negative.\n", getIdName(node));
+        break;
+    case ARRAY_SUBSCRIPT_NOT_INT:
+        printf("Array subscript of ID %s is not integer.\n", getIdName(node));
         break;
     default:
         printf("Unhandled case in void printErrorMsg(AST_NODE* node, ERROR_MSG_KIND* errorMsgKind)\n");
@@ -244,7 +253,7 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
     for (; idNode != NULL; idNode = idNode->rightSibling) {
         char *id = getIdName(idNode);
         TypeDescriptor *typeDesc;
-        if (idNode->semantic_value.identifierSemanticValue.kind == ARRAY_ID) {
+        if (getIdKind(idNode) == ARRAY_ID) {
             processDeclDimList(idNode->child, typeDesc, ignoreArrayFirstDimSize);
             typeDesc->properties.arrayProperties.elementType = dataType;
         } else {
@@ -314,6 +323,20 @@ void evaluateExprValue(AST_NODE* exprNode)
 
 void processExprNode(AST_NODE* exprNode)
 {
+    visitChildren(exprNode);
+    AST_NODE *arg1, *arg2;
+    arg1 = exprNode->child;
+    arg2 = arg1->rightSibling;
+    switch (exprNode->semantic_value.exprSemanticValue.kind) {
+        case BINARY_OPERATION:
+            exprNode->dataType = getBiggerType(arg1->dataType, arg2->dataType);
+            break;
+        case UNARY_OPERATION:
+            exprNode->dataType = arg1->dataType;
+            break;
+        default:
+            ;
+    }
 }
 
 
@@ -449,6 +472,24 @@ void processIdentifierNode(AST_NODE* identifierNode)
         printErrorMsg(identifierNode, SYMBOL_UNDECLARED);
     } else {
         setIdSymtabEntry(identifierNode, sym);
+        TypeDescriptor *typeDesc = sym->attribute->attr.typeDescriptor;
+        switch (typeDesc->kind) {
+            case SCALAR_TYPE_DESCRIPTOR:
+                if (getIdKind(identifierNode) != NORMAL_ID) {
+                    printErrorMsg(identifierNode, NOT_ARRAY);
+                }
+                // ignore array dims, treat as normal id
+                setIdKind(identifierNode, NORMAL_ID);
+                identifierNode->dataType = typeDesc->properties.dataType;
+                break;
+            case ARRAY_TYPE_DESCRIPTOR:
+                checkArrayDereference(identifierNode->child, sym);
+                setIdKind(identifierNode, NORMAL_ID);
+                identifierNode->dataType = typeDesc->properties.arrayProperties.elementType;
+                break;
+            default:
+                ;
+        }
     }
 }
 
@@ -504,4 +545,33 @@ SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode)
 void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym)
 {
     idNode->semantic_value.identifierSemanticValue.symbolTableEntry = sym;
+}
+
+
+IDENTIFIER_KIND getIdKind(AST_NODE *idNode)
+{
+    return idNode->semantic_value.identifierSemanticValue.kind;
+}
+
+
+void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind)
+{
+    idNode->semantic_value.identifierSemanticValue.kind = kind;
+}
+
+
+void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym)
+{
+    int dim = 0;
+    for (; dimListNode != NULL; dimListNode = dimListNode->rightSibling) {
+        visit(dimListNode);
+        if (dimListNode->dataType != INT_TYPE) {
+            printErrorMsg(dimListNode->parent, ARRAY_SUBSCRIPT_NOT_INT);
+        }
+        dim++;
+    }
+    TypeDescriptor *typeDesc = sym->attribute->attr.typeDescriptor;
+    if (dim != typeDesc->properties.arrayProperties.dimension) {
+        printErrorMsg(dimListNode->parent, INCOMPATIBLE_ARRAY_DIMENSION);
+    }
 }
