@@ -102,9 +102,25 @@ void initializeSymbolTable()
 	
 	
 	// 先將 int, float, void 加入
-	enterSymbol("int", NULL);
-	enterSymbol("float", NULL);
-	enterSymbol("void", NULL);
+	SymbolAttribute *symAttr;
+
+	symAttr = malloc(sizeof(SymbolAttribute));
+	symAttr->attributeKind = TYPE_ATTRIBUTE;
+	symAttr->attr.typeDescriptor = malloc(sizeof(TypeDescriptor));
+	symAttr->attr.typeDescriptor->properties.dataType = INT_TYPE;
+	enterSymbol("int", symAttr);
+
+	symAttr = malloc(sizeof(SymbolAttribute));
+	symAttr->attributeKind = TYPE_ATTRIBUTE;
+	symAttr->attr.typeDescriptor = malloc(sizeof(TypeDescriptor));
+	symAttr->attr.typeDescriptor->properties.dataType = FLOAT_TYPE;
+	enterSymbol("float", symAttr);
+
+	symAttr = malloc(sizeof(SymbolAttribute));
+	symAttr->attributeKind = TYPE_ATTRIBUTE;
+	symAttr->attr.typeDescriptor = malloc(sizeof(TypeDescriptor));
+	symAttr->attr.typeDescriptor->properties.dataType = VOID_TYPE;
+	enterSymbol("void", symAttr);
 }
 
 void freeEntryLink(SymbolTableEntry* s) {
