@@ -69,6 +69,12 @@ typedef struct SymbolAttribute
         TypeDescriptor* typeDescriptor;
         FunctionSignature* functionSignature;
     } attr;
+	// just for testing
+	union
+	{
+		int int_value;
+		float float_value;
+	} value;
 } SymbolAttribute;
 
 typedef struct SymbolTableEntry
@@ -102,4 +108,5 @@ int declaredLocally(char* symbolName);
 void openScope();
 void closeScope();
 
+void removeEntry(int hash, SymbolTableEntry* entry);
 #endif
