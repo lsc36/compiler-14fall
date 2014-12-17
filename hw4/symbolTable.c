@@ -81,7 +81,7 @@ void initializeSymbolTable()
 	symbolTable.scopeDisplay = (SymbolTableEntry**)malloc(sizeof(SymbolTableEntry*) * MAX_LEVEL_DEPTH);
 	symbolTable.scopeDisplayElementCount = 0;
 	// 為什麼要算它大小？
-	
+	fprintf(stderr, "initializeSymbolTable finished\n");
 }
 
 void freeEntryLink(SymbolTableEntry* s) {
@@ -119,9 +119,11 @@ void addNewSymbolName(int hash, SymbolTableEntry* newentry)
 {
 	SymbolTableEntry *s = symbolTable.hashTable[hash];
 	newentry->nextInHashChain = s;
-	s->prevInHashChain = newentry;
+	if (s != NULL) {
+		s->prevInHashChain = newentry;
+	}
 	symbolTable.hashTable[hash] = newentry;
-	newentry->nextInHashChain = symbolTable.scopeDisplay[symbolTable.currentLevel];
+	newentry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel];
 	symbolTable.scopeDisplay[symbolTable.currentLevel] = newentry;
 }
 
