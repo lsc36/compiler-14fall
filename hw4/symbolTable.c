@@ -53,12 +53,11 @@ void enterIntoHashTrain(int hashIndex, SymbolTableEntry* entry)
 
 void removeEntry(int hash, SymbolTableEntry* entry)
 {
-	printf("try remove %s\n", entry->name);
+	//printf("try remove %s\n", entry->name);
 	SymbolTableEntry* prev = entry->prevInHashChain;
 	SymbolTableEntry* next = entry->nextInHashChain;
 	SymbolTableEntry* down = entry->sameNameInOuterLevel;
 	if (down == NULL) {
-		printf("down is NULL\n");
 		if (next != NULL) {
 			next->prevInHashChain = prev;
 		}
@@ -70,7 +69,6 @@ void removeEntry(int hash, SymbolTableEntry* entry)
 		}
 	}
 	else {
-		printf("down is not NULL\n");
 		down->prevInHashChain = prev;
 		prev->nextInHashChain = down;
 		down->nextInHashChain = next;
@@ -101,7 +99,6 @@ void initializeSymbolTable()
 	}
 	symbolTable.scopeDisplayElementCount = 0;
 	// 為什麼要算它大小？
-	fprintf(stderr, "initializeSymbolTable finished\n");
 }
 
 void freeEntryLink(SymbolTableEntry* s) {
@@ -156,8 +153,13 @@ SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute)
 	SymbolTableEntry* s = symbolTable.hashTable[hash]->nextInHashChain;
 	while (s != NULL) {
 		if (strcmp(symbolName, s->name) == 0) {
+			//printf("variable %s cover outer level\n", s->name);
 			newEntry->nextInHashChain = s->nextInHashChain;
 			newEntry->prevInHashChain = s->prevInHashChain;
+			if (s->nextInHashChain != NULL) {
+				s->nextInHashChain->prevInHashChain = newEntry;
+			}
+			s->prevInHashChain->nextInHashChain = newEntry;
 			newEntry->sameNameInOuterLevel = s;
 			newEntry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel;
 			symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel = newEntry;
@@ -206,11 +208,8 @@ void openScope()
 
 void closeScope()
 {
-	printf("now level is %d\n", symbolTable.currentLevel);
-	SymbolTableEntry* s = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInHashChain;
-	int count = 1;
+	SymbolTableEntry* s = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel;
 	while (s != NULL) {
-		printf("count %d\n", count++);
 		SymbolTableEntry *ss = s->nextInSameLevel;
 		removeEntry(HASH(s->name), s);
 		s = ss;
