@@ -97,8 +97,14 @@ void initializeSymbolTable()
 	for (int i = 0; i < MAX_LEVEL_DEPTH; i++) {
 		symbolTable.scopeDisplay[i] = (SymbolTableEntry*)malloc(sizeof(SymbolTableEntry));
 	}
-	symbolTable.scopeDisplayElementCount = 0;
 	// 為什麼要算它大小？
+	symbolTable.scopeDisplayElementCount = 0;
+	
+	
+	// 先將 int, float, void 加入
+	enterSymbol("int", NULL);
+	enterSymbol("float", NULL);
+	enterSymbol("void", NULL);
 }
 
 void freeEntryLink(SymbolTableEntry* s) {
