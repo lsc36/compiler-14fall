@@ -42,6 +42,11 @@ void processNonemptyRelOpExprListNode(AST_NODE* node);
 void getExprOrConstValue(AST_NODE* exprOrConstNode, int* iValue, float* fValue);
 void evaluateExprValue(AST_NODE* exprNode);
 
+int checkRedeclared(AST_NODE *idNode, int checkLocal);
+char *getIdName(AST_NODE *idNode);
+SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode);
+void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym);
+
 
 typedef enum ErrorMsgKind
 {
@@ -90,13 +95,27 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
 {
     g_anyErrorOccur = 1;
     printf("Error found in line %d\n", node->linenumber);
-    /*
     switch(errorMsgKind)
     {
+        case SYMBOL_IS_NOT_TYPE:
+        printf("ID %s is not a type.\n", getIdName(node));
+        break;
+    case SYMBOL_REDECLARE:
+        printf("ID %s redeclared.\n", getIdName(node));
+        break;
+    case SYMBOL_UNDECLARED:
+        printf("ID %s undeclared.\n", getIdName(node));
+        break;
+    case ARRAY_SIZE_NOT_INT:
+        printf("Array dimensions of ID %s is not integer.\n", getIdName(node));
+        break;
+    case ARRAY_SIZE_NEGATIVE:
+        printf("Array dimensions of ID %s is negative.\n", getIdName(node));
+        break;
+    default:
         printf("Unhandled case in void printErrorMsg(AST_NODE* node, ERROR_MSG_KIND* errorMsgKind)\n");
         break;
     }
-    */
 }
 
 
@@ -200,6 +219,17 @@ void processDeclarationNode(AST_NODE* declarationNode)
 
 void processTypeNode(AST_NODE* idNodeAsType)
 {
+    char *typeName = getIdName(idNodeAsType);
+    SymbolTableEntry *sym = retrieveSymbol(typeName);
+    if (sym == NULL) {
+        printErrorMsg(idNodeAsType, SYMBOL_UNDECLARED);
+    } else {
+        if (sym->attribute->attributeKind != TYPE_ATTRIBUTE) {
+            printErrorMsg(idNodeAsType, SYMBOL_IS_NOT_TYPE);
+        } else {
+            setIdSymtabEntry(idNodeAsType, sym);
+        }
+    }
 }
 
 
@@ -207,19 +237,29 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
 {
     // children: IDENTIFIER_NODE (type), IDENTIFIER_NODE (id) * n
     AST_NODE *idNode = typeNode->rightSibling;
-    switch (isVariableOrTypeAttribute) {
-        case VARIABLE_ATTRIBUTE:
-            for (; idNode != NULL; idNode = idNode->rightSibling) {
-                // TODO
-            }
-            break;
-        case TYPE_ATTRIBUTE:
-            for (; idNode != NULL; idNode = idNode->rightSibling) {
-                // TODO
-            }
-            break;
-        default:
-            ;
+    processTypeNode(typeNode);
+    // XXX: segfault?
+    DATA_TYPE dataType = getIdSymtabEntry(typeNode)->attribute->attr.typeDescriptor->properties.dataType;
+
+    for (; idNode != NULL; idNode = idNode->rightSibling) {
+        char *id = getIdName(idNode);
+        TypeDescriptor *typeDesc;
+        if (idNode->semantic_value.identifierSemanticValue.kind == ARRAY_ID) {
+            processDeclDimList(idNode->child, typeDesc, ignoreArrayFirstDimSize);
+            typeDesc->properties.arrayProperties.elementType = dataType;
+        } else {
+            typeDesc = malloc(sizeof(TypeDescriptor));
+            typeDesc->kind = SCALAR_TYPE_DESCRIPTOR;
+            typeDesc->properties.dataType = dataType;
+        }
+
+        SymbolAttribute *symAttr = malloc(sizeof(SymbolAttribute));
+        symAttr->attributeKind = isVariableOrTypeAttribute;
+        symAttr->attr.typeDescriptor = typeDesc;
+
+        if (checkRedeclared(idNode, 1)) {
+            setIdSymtabEntry(idNode, enterSymbol(id, symAttr));
+        }
     }
 }
 
@@ -337,19 +377,66 @@ void processGeneralNode(AST_NODE *node)
 
 void processDeclDimList(AST_NODE* varDeclDimListNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize)
 {
+    typeDescriptor->kind = ARRAY_TYPE_DESCRIPTOR;
+    int dim = 0;
+    for (; varDeclDimListNode != NULL; varDeclDimListNode = varDeclDimListNode->rightSibling) {
+        if (dim == 0 && ignoreFirstDimSize) {
+            typeDescriptor->properties.arrayProperties.sizeInEachDimension[dim] = -1;
+        } else {
+            if (varDeclDimListNode->nodeType != CONST_VALUE_NODE || varDeclDimListNode->semantic_value.const1->const_type != INTEGERC) {
+                printErrorMsg(varDeclDimListNode, ARRAY_SIZE_NOT_INT);
+            } else {
+                int size = varDeclDimListNode->semantic_value.const1->const_u.intval;
+                if (size < 0) {
+                    printErrorMsg(varDeclDimListNode, ARRAY_SIZE_NEGATIVE);
+                } else {
+                    typeDescriptor->properties.arrayProperties.sizeInEachDimension[dim] = size;
+                }
+            }
+        }
+        dim++;
+    }
+    typeDescriptor->properties.arrayProperties.dimension = dim;
 }
 
 
 void declareFunction(AST_NODE* returnTypeNode)
 {
-    AST_NODE *idNode, *paramListNode, *blockNode, *paramNode;
+    AST_NODE *idNode, *paramListNode, *blockNode;
     idNode = returnTypeNode->rightSibling;
     paramListNode = idNode->rightSibling;
     blockNode = paramListNode->rightSibling;
+    char *id = getIdName(idNode);
 
-    // TODO
+    processTypeNode(returnTypeNode);
+
     openScope();
-    visitChildren(paramListNode);
+    int numParams = 0;
+    AST_NODE *paramDeclNode = paramListNode->child;
+    Parameter *paramList = NULL;
+    for (; paramDeclNode != NULL; paramDeclNode = paramDeclNode->rightSibling) {
+        visit(paramDeclNode);
+        AST_NODE *idNode = paramDeclNode->child->rightSibling;
+        Parameter *newParam = malloc(sizeof(Parameter));
+        newParam->type = getIdSymtabEntry(idNode)->attribute->attr.typeDescriptor;
+        newParam->parameterName = getIdName(idNode);
+        newParam->next = paramList;
+        paramList = newParam;
+        numParams++;
+    }
+
+    SymbolAttribute *symAttr = malloc(sizeof(SymbolAttribute));
+    symAttr->attributeKind = FUNCTION_SIGNATURE;
+    symAttr->attr.functionSignature = malloc(sizeof(FunctionSignature));
+    symAttr->attr.functionSignature->parametersCount = numParams;
+    symAttr->attr.functionSignature->parameterList = paramList;
+    // XXX: segfault?
+    symAttr->attr.functionSignature->returnType = getIdSymtabEntry(returnTypeNode)->attribute->attr.typeDescriptor->properties.dataType;
+
+    if (checkRedeclared(idNode, 0)) {
+        setIdSymtabEntry(idNode, enterSymbol(id, symAttr));
+    }
+
     visitChildren(blockNode);
     closeScope();
 }
@@ -357,17 +444,7 @@ void declareFunction(AST_NODE* returnTypeNode)
 
 void processIdentifierNode(AST_NODE* identifierNode)
 {
-    const char *TYPES[] = {"void", "int", "float", NULL};
-    char *id = identifierNode->semantic_value.identifierSemanticValue.identifierName;
     TypeDescriptor *typeDescriptor;
-    int i;
-    for (i = 0; TYPES[i] != NULL; i++) {
-        if (strcmp(id, TYPES[i]) == 0) {
-            processTypeNode(identifierNode);
-            return;
-        }
-    }
-
     switch (identifierNode->semantic_value.identifierSemanticValue.kind) {
         case NORMAL_ID:
             // TODO
@@ -408,4 +485,33 @@ void processNonemptyAssignExprListNode(AST_NODE* node)
 
 void processNonemptyRelOpExprListNode(AST_NODE* node)
 {
+}
+
+
+int checkRedeclared(AST_NODE *idNode, int checkLocal)
+{
+    // return 1 if check passed
+    char *id = getIdName(idNode);
+    if (checkLocal && !declaredLocally(id)) return 1;
+    if (!checkLocal && retrieveSymbol(id) == NULL) return 1;
+    printErrorMsg(idNode, SYMBOL_REDECLARE);
+    return 0;
+}
+
+
+char *getIdName(AST_NODE *idNode)
+{
+    return idNode->semantic_value.identifierSemanticValue.identifierName;
+}
+
+
+SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode)
+{
+    return idNode->semantic_value.identifierSemanticValue.symbolTableEntry;
+}
+
+
+void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym)
+{
+    idNode->semantic_value.identifierSemanticValue.symbolTableEntry = sym;
 }
