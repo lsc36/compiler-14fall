@@ -78,7 +78,7 @@ void initializeSymbolTable()
 	}
 	symbolTable.currentLevel = 0;
 	// TODO: 先用大陣列矇混一下，有空再修改
-	symbolTable.scopeDisplay = (SymbolTableEntry*)malloc(sizeof(SymbolTableEntry*) * MAX_LEVEL_DEPTH);
+	symbolTable.scopeDisplay = (SymbolTableEntry**)malloc(sizeof(SymbolTableEntry*) * MAX_LEVEL_DEPTH);
 	symbolTable.scopeDisplayElementCount = 0;
 	// 為什麼要算它大小？
 	
@@ -151,7 +151,6 @@ SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute)
 void removeSymbol(char* symbolName)
 {
 	int hash = HASH(symbolName);
-	SymbolTableEntry* newEntry = makeSymbolTableEntry(symbolTable.currentLevel, symbolName, attribute);
 	SymbolTableEntry* s = symbolTable.hashTable[hash];
 	while (s != NULL) {
 		if (strcmp(s->name, symbolName) == 0) {
