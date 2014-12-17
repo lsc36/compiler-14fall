@@ -444,21 +444,11 @@ void declareFunction(AST_NODE* returnTypeNode)
 
 void processIdentifierNode(AST_NODE* identifierNode)
 {
-    TypeDescriptor *typeDescriptor;
-    switch (identifierNode->semantic_value.identifierSemanticValue.kind) {
-        case NORMAL_ID:
-            // TODO
-            break;
-        case ARRAY_ID:
-            typeDescriptor = malloc(sizeof(TypeDescriptor));
-            processDeclDimList(identifierNode, typeDescriptor, 0);
-            // TODO
-            break;
-        case WITH_INIT_ID:
-            // TODO
-            break;
-        default:
-            ;
+    SymbolTableEntry *sym = retrieveSymbol(getIdName(identifierNode));
+    if (sym == NULL) {
+        printErrorMsg(identifierNode, SYMBOL_UNDECLARED);
+    } else {
+        setIdSymtabEntry(identifierNode, sym);
     }
 }
 
