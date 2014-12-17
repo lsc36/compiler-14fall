@@ -51,37 +51,60 @@ void enterIntoHashTrain(int hashIndex, SymbolTableEntry* entry)
 }
 */
 
-void removeEntry(SymbolTableEntry* entry)
+void removeEntry(int hash, SymbolTableEntry* entry)
 {
+	//printf("try remove %s\n", entry->name);
 	SymbolTableEntry* prev = entry->prevInHashChain;
 	SymbolTableEntry* next = entry->nextInHashChain;
 	SymbolTableEntry* down = entry->sameNameInOuterLevel;
 	if (down == NULL) {
-		prev->nextInHashChain = next;
 		if (next != NULL) {
 			next->prevInHashChain = prev;
 		}
+		if (prev != NULL) {
+			prev->nextInHashChain = next;
+		}
+		else {
+			symbolTable.hashTable[hash]->nextInHashChain = next;
+		}
 	}
 	else {
+		down->prevInHashChain = prev;
 		prev->nextInHashChain = down;
+		down->nextInHashChain = next;
 		if (next != NULL) {
 			next->prevInHashChain = down;
 		}
+		if (prev != NULL) {
+			prev->nextInHashChain = down;
+		}
+		else {
+			symbolTable.hashTable[hash]->nextInHashChain = down;
+		}
 	}
+	//printf("relink OK\n");
 	free(entry);
 }
 
 void initializeSymbolTable()
 {
 	for (int i = 0; i < HASH_TABLE_SIZE; i++) {
-		symbolTable.hashTable[i] = NULL;
+		symbolTable.hashTable[i] = newSymbolTableEntry(0);
 	}
 	symbolTable.currentLevel = 0;
 	// TODO: 先用大陣列矇混一下，有空再修改
 	symbolTable.scopeDisplay = (SymbolTableEntry**)malloc(sizeof(SymbolTableEntry*) * MAX_LEVEL_DEPTH);
-	symbolTable.scopeDisplayElementCount = 0;
+	for (int i = 0; i < MAX_LEVEL_DEPTH; i++) {
+		symbolTable.scopeDisplay[i] = (SymbolTableEntry*)malloc(sizeof(SymbolTableEntry));
+	}
 	// 為什麼要算它大小？
-	fprintf(stderr, "initializeSymbolTable finished\n");
+	symbolTable.scopeDisplayElementCount = 0;
+	
+	
+	// 先將 int, float, void 加入
+	enterSymbol("int", NULL);
+	enterSymbol("float", NULL);
+	enterSymbol("void", NULL);
 }
 
 void freeEntryLink(SymbolTableEntry* s) {
@@ -104,7 +127,7 @@ void symbolTableEnd()
 SymbolTableEntry* retrieveSymbol(char* symbolName)
 {
 	int hash = HASH(symbolName);
-	SymbolTableEntry* s = symbolTable.hashTable[hash];
+	SymbolTableEntry* s = symbolTable.hashTable[hash]->nextInHashChain;
 	while (s != NULL) {
 		if (strcmp(symbolName, s->name) == 0) {
 			return s;
@@ -115,30 +138,37 @@ SymbolTableEntry* retrieveSymbol(char* symbolName)
 	return NULL;
 }
 
-void addNewSymbolName(int hash, SymbolTableEntry* newentry)
+void addNewSymbolName(int hash, SymbolTableEntry* newEntry)
 {
-	SymbolTableEntry *s = symbolTable.hashTable[hash];
-	newentry->nextInHashChain = s;
+	SymbolTableEntry *s = symbolTable.hashTable[hash]->nextInHashChain;
+	newEntry->nextInHashChain = s;
 	if (s != NULL) {
-		s->prevInHashChain = newentry;
+		s->prevInHashChain = newEntry;
 	}
-	symbolTable.hashTable[hash] = newentry;
-	newentry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel];
-	symbolTable.scopeDisplay[symbolTable.currentLevel] = newentry;
+	symbolTable.hashTable[hash]->nextInHashChain = newEntry;
+	newEntry->prevInHashChain = symbolTable.hashTable[hash];
+	
+	newEntry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel;
+	symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel = newEntry;
 }
 
 SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute)
 {
 	int hash = HASH(symbolName);
 	SymbolTableEntry* newEntry = makeSymbolTableEntry(symbolTable.currentLevel, symbolName, attribute);
-	SymbolTableEntry* s = symbolTable.hashTable[hash];
+	SymbolTableEntry* s = symbolTable.hashTable[hash]->nextInHashChain;
 	while (s != NULL) {
 		if (strcmp(symbolName, s->name) == 0) {
+			//printf("variable %s cover outer level\n", s->name);
 			newEntry->nextInHashChain = s->nextInHashChain;
 			newEntry->prevInHashChain = s->prevInHashChain;
+			if (s->nextInHashChain != NULL) {
+				s->nextInHashChain->prevInHashChain = newEntry;
+			}
+			s->prevInHashChain->nextInHashChain = newEntry;
 			newEntry->sameNameInOuterLevel = s;
-			newEntry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel];
-			symbolTable.scopeDisplay[symbolTable.currentLevel] = newEntry;
+			newEntry->nextInSameLevel = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel;
+			symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel = newEntry;
 			return newEntry;
 		}
 		s = s->nextInHashChain;
@@ -153,10 +183,10 @@ SymbolTableEntry* enterSymbol(char* symbolName, SymbolAttribute* attribute)
 void removeSymbol(char* symbolName)
 {
 	int hash = HASH(symbolName);
-	SymbolTableEntry* s = symbolTable.hashTable[hash];
+	SymbolTableEntry* s = symbolTable.hashTable[hash]->nextInHashChain;
 	while (s != NULL) {
 		if (strcmp(s->name, symbolName) == 0) {
-			removeEntry(s);
+			removeEntry(hash, s);
 			return;
 		}
 		s = s->nextInHashChain;
@@ -166,7 +196,7 @@ void removeSymbol(char* symbolName)
 int declaredLocally(char* symbolName)
 {
 	int hash = HASH(symbolName);
-	SymbolTableEntry* s = symbolTable.hashTable[hash];
+	SymbolTableEntry* s = symbolTable.hashTable[hash]->nextInHashChain;
 	while (s != NULL) {
 		if (strcmp(s->name, symbolName) == 0 && s->nestingLevel == symbolTable.currentLevel) {
 			return 1;
@@ -179,14 +209,16 @@ int declaredLocally(char* symbolName)
 void openScope()
 {
 	symbolTable.currentLevel++;
-	symbolTable.scopeDisplay[symbolTable.currentLevel] = NULL;
+	symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel = NULL;
 }
 
 void closeScope()
 {
-	SymbolTableEntry* s = symbolTable.hashTable[symbolTable.currentLevel];
+	SymbolTableEntry* s = symbolTable.scopeDisplay[symbolTable.currentLevel]->nextInSameLevel;
 	while (s != NULL) {
-		removeEntry(s);
+		SymbolTableEntry *ss = s->nextInSameLevel;
+		removeEntry(HASH(s->name), s);
+		s = ss;
 	}
 	symbolTable.currentLevel--;
 }
