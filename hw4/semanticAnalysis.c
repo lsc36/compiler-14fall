@@ -49,6 +49,7 @@ void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym);
 IDENTIFIER_KIND getIdKind(AST_NODE *idNode);
 void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind);
 void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym);
+TypeDescriptor *getTypeDescriptor(SymbolTableEntry *sym);
 
 
 typedef enum ErrorMsgKind
@@ -111,6 +112,12 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
         break;
     case INCOMPATIBLE_ARRAY_DIMENSION:
         printf("Incompatible array dimensions for array ID %s.\n", getIdName(node));
+        break;
+    case IS_TYPE_NOT_VARIABLE:
+        printf("ID %s is type, not variable.\n", getIdName(node));
+        break;
+    case IS_FUNCTION_NOT_VARIABLE:
+        printf("ID %s is function, not variable.\n", getIdName(node));
         break;
     case ARRAY_SIZE_NOT_INT:
         printf("Array dimensions of ID %s is not integer.\n", getIdName(node));
@@ -249,7 +256,7 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
     // children: IDENTIFIER_NODE (type), IDENTIFIER_NODE (id) * n
     AST_NODE *idNode = typeNode->rightSibling;
     processTypeNode(typeNode);
-    DATA_TYPE dataType = getIdSymtabEntry(typeNode)->attribute->attr.typeDescriptor->properties.dataType;
+    DATA_TYPE dataType = getTypeDescriptor(getIdSymtabEntry(typeNode))->properties.dataType;
 
     for (; idNode != NULL; idNode = idNode->rightSibling) {
         char *id = getIdName(idNode);
@@ -282,21 +289,28 @@ void checkAssignOrExpr(AST_NODE* assignOrExprRelatedNode)
 
 void checkWhileStmt(AST_NODE* whileNode)
 {
+    visitChildren(whileNode);
 }
 
 
 void checkForStmt(AST_NODE* forNode)
 {
+    visitChildren(forNode);
 }
 
 
 void checkAssignmentStmt(AST_NODE* assignmentNode)
 {
+    visitChildren(assignmentNode);
+    AST_NODE *lhs, *rhs;
+    lhs = assignmentNode->child;
+    rhs = lhs->rightSibling;
 }
 
 
 void checkIfStmt(AST_NODE* ifNode)
 {
+    visitChildren(ifNode);
 }
 
 void checkWriteFunction(AST_NODE* functionCallNode)
@@ -437,27 +451,8 @@ void declareFunction(AST_NODE* returnTypeNode)
 
     processTypeNode(returnTypeNode);
 
-    openScope();
-    int numParams = 0;
-    AST_NODE *paramDeclNode = paramListNode->child;
-    Parameter *paramList = NULL;
-    for (; paramDeclNode != NULL; paramDeclNode = paramDeclNode->rightSibling) {
-        visit(paramDeclNode);
-        AST_NODE *idNode = paramDeclNode->child->rightSibling;
-        Parameter *newParam = malloc(sizeof(Parameter));
-        newParam->type = getIdSymtabEntry(idNode)->attribute->attr.typeDescriptor;
-        newParam->parameterName = getIdName(idNode);
-        newParam->next = paramList;
-        paramList = newParam;
-        numParams++;
-    }
-
     SymbolAttribute *symAttr = malloc(sizeof(SymbolAttribute));
     symAttr->attributeKind = FUNCTION_SIGNATURE;
-    symAttr->attr.functionSignature = malloc(sizeof(FunctionSignature));
-    symAttr->attr.functionSignature->parametersCount = numParams;
-    symAttr->attr.functionSignature->parameterList = paramList;
-    symAttr->attr.functionSignature->returnType = getIdSymtabEntry(returnTypeNode)->attribute->attr.typeDescriptor->properties.dataType;
 
     if (checkRedeclared(idNode, 0)) {
         setIdSymtabEntry(idNode, enterSymbol(id, symAttr));
@@ -466,6 +461,26 @@ void declareFunction(AST_NODE* returnTypeNode)
         setIdSymtabEntry(idNode, retrieveSymbol(id));
     }
 
+    openScope();
+    int numParams = 0;
+    AST_NODE *paramDeclNode = paramListNode->child;
+    Parameter *paramList = NULL;
+    for (; paramDeclNode != NULL; paramDeclNode = paramDeclNode->rightSibling) {
+        visit(paramDeclNode);
+        AST_NODE *idNode = paramDeclNode->child->rightSibling;
+        Parameter *newParam = malloc(sizeof(Parameter));
+        newParam->type = getTypeDescriptor(getIdSymtabEntry(idNode));
+        newParam->parameterName = getIdName(idNode);
+        newParam->next = paramList;
+        paramList = newParam;
+        numParams++;
+    }
+
+    symAttr->attr.functionSignature = malloc(sizeof(FunctionSignature));
+    symAttr->attr.functionSignature->parametersCount = numParams;
+    symAttr->attr.functionSignature->parameterList = paramList;
+    symAttr->attr.functionSignature->returnType = getTypeDescriptor(getIdSymtabEntry(returnTypeNode))->properties.dataType;
+
     visitChildren(blockNode);
     closeScope();
 }
@@ -473,25 +488,33 @@ void declareFunction(AST_NODE* returnTypeNode)
 
 void processIdentifierNode(AST_NODE* identifierNode)
 {
+    // use in assignments and exprs only
+    printf("processIdentifierNode \"%s\"\n", getIdName(identifierNode));
     SymbolTableEntry *sym = retrieveSymbol(getIdName(identifierNode));
+    setIdSymtabEntry(identifierNode, sym);
     if (sym == NULL) {
         printErrorMsg(identifierNode, SYMBOL_UNDECLARED);
+        // prevent segfault
+        setIdSymtabEntry(identifierNode, retrieveSymbol("void"));
+    } else if (sym->attribute->attributeKind == TYPE_ATTRIBUTE) {
+        printErrorMsg(identifierNode, IS_TYPE_NOT_VARIABLE);
+    } else if (sym->attribute->attributeKind == FUNCTION_SIGNATURE) {
+        printErrorMsg(identifierNode, IS_FUNCTION_NOT_VARIABLE);
     } else {
-        setIdSymtabEntry(identifierNode, sym);
-        TypeDescriptor *typeDesc = sym->attribute->attr.typeDescriptor;
-        switch (typeDesc->kind) {
+        switch (getTypeDescriptor(sym)->kind) {
             case SCALAR_TYPE_DESCRIPTOR:
                 if (getIdKind(identifierNode) != NORMAL_ID) {
                     printErrorMsg(identifierNode, NOT_ARRAY);
                 }
                 // ignore array dims, treat as normal id
                 setIdKind(identifierNode, NORMAL_ID);
-                identifierNode->dataType = typeDesc->properties.dataType;
+                identifierNode->dataType = getTypeDescriptor(sym)->properties.dataType;
                 break;
             case ARRAY_TYPE_DESCRIPTOR:
                 checkArrayDereference(identifierNode->child, sym);
+                // treat as scalar of array element type if dereference failed
                 setIdKind(identifierNode, NORMAL_ID);
-                identifierNode->dataType = typeDesc->properties.arrayProperties.elementType;
+                identifierNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
                 break;
             default:
                 ;
@@ -513,16 +536,19 @@ void processVarDeclListNode(AST_NODE* varDeclListNode)
 
 void processStmtListNode(AST_NODE* stmtListNode)
 {
+    visitChildren(stmtListNode);
 }
 
 
 void processNonemptyAssignExprListNode(AST_NODE* node)
 {
+    visitChildren(node);
 }
 
 
 void processNonemptyRelOpExprListNode(AST_NODE* node)
 {
+    visitChildren(node);
 }
 
 
@@ -581,4 +607,10 @@ void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym)
     if (dim != typeDesc->properties.arrayProperties.dimension) {
         printErrorMsg(dimListNode->parent, INCOMPATIBLE_ARRAY_DIMENSION);
     }
+}
+
+
+TypeDescriptor *getTypeDescriptor(SymbolTableEntry *sym)
+{
+    return sym->attribute->attr.typeDescriptor;
 }
