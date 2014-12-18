@@ -48,7 +48,7 @@ SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode);
 void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym);
 IDENTIFIER_KIND getIdKind(AST_NODE *idNode);
 void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind);
-void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym);
+void checkArrayDereference(AST_NODE *idNode);
 TypeDescriptor *getTypeDescriptor(SymbolTableEntry *sym);
 
 DATA_TYPE currentFunctionReturnType;
@@ -277,13 +277,12 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
 
     for (; idNode != NULL; idNode = idNode->rightSibling) {
         char *id = getIdName(idNode);
-        TypeDescriptor *typeDesc;
+        TypeDescriptor *typeDesc = malloc(sizeof(TypeDescriptor));
         if (getIdKind(idNode) == ARRAY_ID) {
             processDeclDimList(idNode->child, typeDesc, ignoreArrayFirstDimSize);
             typeDesc->properties.arrayProperties.elementType = dataType;
             // TODO: check TRY_TO_INIT_ARRAY
         } else {
-            typeDesc = malloc(sizeof(TypeDescriptor));
             typeDesc->kind = SCALAR_TYPE_DESCRIPTOR;
             typeDesc->properties.dataType = dataType;
 
@@ -419,6 +418,16 @@ void processVariableRValue(AST_NODE* idNode)
 
 void processConstValueNode(AST_NODE* constValueNode)
 {
+    switch (constValueNode->semantic_value.const1->const_type) {
+        case INTEGERC:
+            constValueNode->dataType = INT_TYPE;
+            break;
+        case FLOATC:
+            constValueNode->dataType = FLOAT_TYPE;
+            break;
+        default:
+            ;
+    }
 }
 
 
@@ -574,7 +583,7 @@ void processIdentifierNode(AST_NODE* identifierNode)
                 identifierNode->dataType = getTypeDescriptor(sym)->properties.dataType;
                 break;
             case ARRAY_TYPE_DESCRIPTOR:
-                checkArrayDereference(identifierNode->child, sym);
+                checkArrayDereference(identifierNode);
                 // treat as scalar of array element type if dereference failed
                 setIdKind(identifierNode, NORMAL_ID);
                 identifierNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
@@ -656,8 +665,10 @@ void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind)
 }
 
 
-void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym)
+void checkArrayDereference(AST_NODE *idNode)
 {
+    SymbolTableEntry *sym = getIdSymtabEntry(idNode);
+    AST_NODE *dimListNode = idNode->child;
     int dim = 0;
     for (; dimListNode != NULL; dimListNode = dimListNode->rightSibling) {
         visit(dimListNode);
@@ -668,7 +679,7 @@ void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym)
     }
     TypeDescriptor *typeDesc = sym->attribute->attr.typeDescriptor;
     if (dim != typeDesc->properties.arrayProperties.dimension) {
-        printErrorMsg(dimListNode->parent, INCOMPATIBLE_ARRAY_DIMENSION);
+        printErrorMsg(idNode, INCOMPATIBLE_ARRAY_DIMENSION);
     }
 }
 
