@@ -16,7 +16,7 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
 void declareFunction(AST_NODE* returnTypeNode);
 void processDeclDimList(AST_NODE* varDeclDimListNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize);
 void processTypeNode(AST_NODE* typeNode);
-void processIdentifierNode(AST_NODE* identifierNode);
+void processIdentifierNode(AST_NODE* identifierNode, int dereferenceArray);
 void processParamListNode(AST_NODE* paramListNode);
 void processBlockNode(AST_NODE* blockNode);
 void processVarDeclListNode(AST_NODE* varDeclListNode);
@@ -86,14 +86,18 @@ void printErrorMsgSpecial(AST_NODE* node1, char* name2, ErrorMsgKind errorMsgKin
 {
     g_anyErrorOccur = 1;
     printf("Error found in line %d\n", node1->linenumber);
-    /*
     switch(errorMsgKind)
     {
+    case PASS_ARRAY_TO_SCALAR:
+        printf("Array %s passed to scalar parameter %s.", getIdName(node1), name2);
+        break;
+    case PASS_SCALAR_TO_ARRAY:
+        printf("Scalar %s passed to array parameter %s.", getIdName(node1), name2);
+        break;
     default:
         printf("Unhandled case in void printErrorMsg(AST_NODE* node, ERROR_MSG_KIND* errorMsgKind)\n");
         break;
     }
-    */
 }
 
 
@@ -162,7 +166,7 @@ void visit(AST_NODE *node)
             processDeclarationNode(node);
             break;
         case IDENTIFIER_NODE:
-            processIdentifierNode(node);
+            processIdentifierNode(node, 1);
             break;
         case PARAM_LIST_NODE:
             processParamListNode(node);
@@ -362,9 +366,30 @@ void checkParameterPassing(Parameter* formalParameter, AST_NODE* actualParameter
 {
     AST_NODE *paramNode = actualParameter->child;
     while (paramNode != NULL && formalParameter != NULL) {
+        if (paramNode->nodeType == IDENTIFIER_NODE) {
+            processIdentifierNode(paramNode, 0);
+        } else {
+            visit(paramNode);
+        }
+        switch (formalParameter->type->kind) {
+            case SCALAR_TYPE_DESCRIPTOR:
+                if (paramNode->nodeType == IDENTIFIER_NODE && getIdKind(paramNode) == ARRAY_ID) {
+                    printErrorMsgSpecial(paramNode, formalParameter->parameterName, PASS_ARRAY_TO_SCALAR);
+                }
+                break;
+            case ARRAY_TYPE_DESCRIPTOR:
+                if (!(paramNode->nodeType == IDENTIFIER_NODE && getIdKind(paramNode) == ARRAY_ID)) {
+                    // XXX: pass expr to array?
+                    printErrorMsgSpecial(paramNode, formalParameter->parameterName, PASS_SCALAR_TO_ARRAY);
+                }
+                break;
+            default:
+                ;
+        }
+        // TODO: check dimension match
+
         paramNode = paramNode->rightSibling;
         formalParameter = formalParameter->next;
-        // TODO: check type
     }
     if (paramNode != NULL) {
         printErrorMsg(actualParameter->leftmostSibling, TOO_MANY_ARGUMENTS);
@@ -559,9 +584,8 @@ void declareFunction(AST_NODE* returnTypeNode)
 }
 
 
-void processIdentifierNode(AST_NODE* identifierNode)
+void processIdentifierNode(AST_NODE* identifierNode, int dereferenceArray)
 {
-    // use in assignments and exprs only
     SymbolTableEntry *sym = retrieveSymbol(getIdName(identifierNode));
     setIdSymtabEntry(identifierNode, sym);
     if (sym == NULL) {
@@ -583,10 +607,14 @@ void processIdentifierNode(AST_NODE* identifierNode)
                 identifierNode->dataType = getTypeDescriptor(sym)->properties.dataType;
                 break;
             case ARRAY_TYPE_DESCRIPTOR:
-                checkArrayDereference(identifierNode);
-                // treat as scalar of array element type if dereference failed
-                setIdKind(identifierNode, NORMAL_ID);
-                identifierNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
+                if (dereferenceArray) {
+                    checkArrayDereference(identifierNode);
+                    // treat as scalar of array element type if dereference failed
+                    setIdKind(identifierNode, NORMAL_ID);
+                    identifierNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
+                } else {
+                    setIdKind(identifierNode, ARRAY_ID);
+                }
                 break;
             default:
                 ;
