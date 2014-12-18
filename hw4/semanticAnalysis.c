@@ -110,6 +110,15 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
     case SYMBOL_UNDECLARED:
         printf("ID %s undeclared.\n", getIdName(node));
         break;
+    case NOT_FUNCTION_NAME:
+        printf("ID %s is not a function.\n", getIdName(node));
+        break;
+    case TOO_FEW_ARGUMENTS:
+        printf("Too few arguments to function %s.\n", getIdName(node));
+        break;
+    case TOO_MANY_ARGUMENTS:
+        printf("Too many arguments to function %s.\n", getIdName(node));
+        break;
     case INCOMPATIBLE_ARRAY_DIMENSION:
         printf("Incompatible array dimensions for array ID %s.\n", getIdName(node));
         break;
@@ -264,10 +273,15 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
         if (getIdKind(idNode) == ARRAY_ID) {
             processDeclDimList(idNode->child, typeDesc, ignoreArrayFirstDimSize);
             typeDesc->properties.arrayProperties.elementType = dataType;
+            // TODO: check TRY_TO_INIT_ARRAY
         } else {
             typeDesc = malloc(sizeof(TypeDescriptor));
             typeDesc->kind = SCALAR_TYPE_DESCRIPTOR;
             typeDesc->properties.dataType = dataType;
+
+            if (getIdKind(idNode) == WITH_INIT_ID) {
+                visit(idNode->child);
+            }
         }
 
         SymbolAttribute *symAttr = malloc(sizeof(SymbolAttribute));
@@ -319,10 +333,38 @@ void checkWriteFunction(AST_NODE* functionCallNode)
 
 void checkFunctionCall(AST_NODE* functionCallNode)
 {
+    AST_NODE *idNode, *paramListNode;
+    idNode = functionCallNode->child;
+    paramListNode = idNode->rightSibling;
+
+    SymbolTableEntry *sym = retrieveSymbol(getIdName(idNode));
+    setIdSymtabEntry(idNode, sym);
+    if (sym == NULL) {
+        printErrorMsg(idNode, SYMBOL_UNDECLARED);
+        functionCallNode->dataType = VOID_TYPE;
+    } else if (sym->attribute->attributeKind != FUNCTION_SIGNATURE) {
+        printErrorMsg(idNode, NOT_FUNCTION_NAME);
+        functionCallNode->dataType = VOID_TYPE;
+    } else {
+        checkParameterPassing(sym->attribute->attr.functionSignature->parameterList, paramListNode);
+        functionCallNode->dataType = sym->attribute->attr.functionSignature->returnType;
+    }
 }
 
 void checkParameterPassing(Parameter* formalParameter, AST_NODE* actualParameter)
 {
+    AST_NODE *paramNode = actualParameter->child;
+    while (paramNode != NULL && formalParameter != NULL) {
+        paramNode = paramNode->rightSibling;
+        formalParameter = formalParameter->next;
+        // TODO: check type
+    }
+    if (paramNode != NULL) {
+        printErrorMsg(actualParameter->leftmostSibling, TOO_MANY_ARGUMENTS);
+    }
+    if (formalParameter != NULL) {
+        printErrorMsg(actualParameter->leftmostSibling, TOO_FEW_ARGUMENTS);
+    }
 }
 
 
@@ -471,8 +513,14 @@ void declareFunction(AST_NODE* returnTypeNode)
         Parameter *newParam = malloc(sizeof(Parameter));
         newParam->type = getTypeDescriptor(getIdSymtabEntry(idNode));
         newParam->parameterName = getIdName(idNode);
-        newParam->next = paramList;
-        paramList = newParam;
+        // XXX: O(n^2) insert at bottom
+        newParam->next = NULL;
+        if (paramList == NULL) paramList = newParam;
+        else {
+            Parameter *cur = paramList;
+            while (cur->next != NULL) cur = cur->next;
+            cur->next = newParam;
+        }
         numParams++;
     }
 
