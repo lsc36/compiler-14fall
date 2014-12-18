@@ -9,7 +9,9 @@ int main() {
 	b = a[2.1 * 4 - 2][4]
 	b = a[3];
 	b = a[1][1][1];
-	func(a, b);
-	func(a[1], b);
-	func(a, a[1][1]);
+
+	func(a, b); // correct
+	func(a[1], b); // correct
+	func(a, a[1][1]); // correct
+	func(a[1][1], a[1][1]); // incorrect
 }
