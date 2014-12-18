@@ -16,7 +16,7 @@ void declareIdList(AST_NODE* typeNode, SymbolAttributeKind isVariableOrTypeAttri
 void declareFunction(AST_NODE* returnTypeNode);
 void processDeclDimList(AST_NODE* varDeclDimListNode, TypeDescriptor* typeDescriptor, int ignoreFirstDimSize);
 void processTypeNode(AST_NODE* typeNode);
-void processIdentifierNode(AST_NODE* identifierNode, int dereferenceArray);
+void processIdentifierNode(AST_NODE* identifierNode, int matchDimensions);
 void processParamListNode(AST_NODE* paramListNode);
 void processBlockNode(AST_NODE* blockNode);
 void processVarDeclListNode(AST_NODE* varDeclListNode);
@@ -48,7 +48,7 @@ SymbolTableEntry *getIdSymtabEntry(AST_NODE *idNode);
 void setIdSymtabEntry(AST_NODE *idNode, SymbolTableEntry *sym);
 IDENTIFIER_KIND getIdKind(AST_NODE *idNode);
 void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind);
-void checkArrayDereference(AST_NODE *idNode);
+void checkArrayDereference(AST_NODE *idNode, int matchDimensions);
 TypeDescriptor *getTypeDescriptor(SymbolTableEntry *sym);
 
 DATA_TYPE currentFunctionReturnType;
@@ -584,7 +584,7 @@ void declareFunction(AST_NODE* returnTypeNode)
 }
 
 
-void processIdentifierNode(AST_NODE* identifierNode, int dereferenceArray)
+void processIdentifierNode(AST_NODE* identifierNode, int matchDimensions)
 {
     SymbolTableEntry *sym = retrieveSymbol(getIdName(identifierNode));
     setIdSymtabEntry(identifierNode, sym);
@@ -607,14 +607,7 @@ void processIdentifierNode(AST_NODE* identifierNode, int dereferenceArray)
                 identifierNode->dataType = getTypeDescriptor(sym)->properties.dataType;
                 break;
             case ARRAY_TYPE_DESCRIPTOR:
-                if (dereferenceArray) {
-                    checkArrayDereference(identifierNode);
-                    // treat as scalar of array element type if dereference failed
-                    setIdKind(identifierNode, NORMAL_ID);
-                    identifierNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
-                } else {
-                    setIdKind(identifierNode, ARRAY_ID);
-                }
+                checkArrayDereference(identifierNode, matchDimensions);
                 break;
             default:
                 ;
@@ -693,7 +686,7 @@ void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind)
 }
 
 
-void checkArrayDereference(AST_NODE *idNode)
+void checkArrayDereference(AST_NODE *idNode, int matchDimensions)
 {
     SymbolTableEntry *sym = getIdSymtabEntry(idNode);
     AST_NODE *dimListNode = idNode->child;
@@ -706,9 +699,22 @@ void checkArrayDereference(AST_NODE *idNode)
         dim++;
     }
     TypeDescriptor *typeDesc = sym->attribute->attr.typeDescriptor;
-    if (dim != typeDesc->properties.arrayProperties.dimension) {
-        printErrorMsg(idNode, INCOMPATIBLE_ARRAY_DIMENSION);
+    if (matchDimensions) {
+        if (dim != typeDesc->properties.arrayProperties.dimension) {
+            printErrorMsg(idNode, INCOMPATIBLE_ARRAY_DIMENSION);
+        }
+        setIdKind(idNode, NORMAL_ID);
+    } else {
+        if (dim == typeDesc->properties.arrayProperties.dimension) {
+            setIdKind(idNode, NORMAL_ID);
+        } else if (dim < typeDesc->properties.arrayProperties.dimension) {
+            setIdKind(idNode, ARRAY_ID);
+        } else {
+            // XXX
+            setIdKind(idNode, NORMAL_ID);
+        }
     }
+    idNode->dataType = getTypeDescriptor(sym)->properties.arrayProperties.elementType;
 }
 
 
