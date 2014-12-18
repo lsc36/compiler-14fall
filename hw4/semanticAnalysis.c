@@ -89,10 +89,10 @@ void printErrorMsgSpecial(AST_NODE* node1, char* name2, ErrorMsgKind errorMsgKin
     switch(errorMsgKind)
     {
     case PASS_ARRAY_TO_SCALAR:
-        printf("Array %s passed to scalar parameter %s.", getIdName(node1), name2);
+        printf("Array %s passed to scalar parameter %s.\n", getIdName(node1), name2);
         break;
     case PASS_SCALAR_TO_ARRAY:
-        printf("Scalar %s passed to array parameter %s.", getIdName(node1), name2);
+        printf("Scalar %s passed to array parameter %s.\n", getIdName(node1), name2);
         break;
     default:
         printf("Unhandled case in void printErrorMsg(AST_NODE* node, ERROR_MSG_KIND* errorMsgKind)\n");
