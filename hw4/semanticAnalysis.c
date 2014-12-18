@@ -51,6 +51,8 @@ void setIdKind(AST_NODE *idNode, IDENTIFIER_KIND kind);
 void checkArrayDereference(AST_NODE *dimListNode, SymbolTableEntry *sym);
 TypeDescriptor *getTypeDescriptor(SymbolTableEntry *sym);
 
+DATA_TYPE currentFunctionReturnType;
+
 
 typedef enum ErrorMsgKind
 {
@@ -113,11 +115,17 @@ void printErrorMsg(AST_NODE* node, ErrorMsgKind errorMsgKind)
     case NOT_FUNCTION_NAME:
         printf("ID %s is not a function.\n", getIdName(node));
         break;
+    case RETURN_ARRAY:
+        printf("Function returns array.\n");
+        break;
     case TOO_FEW_ARGUMENTS:
         printf("Too few arguments to function %s.\n", getIdName(node));
         break;
     case TOO_MANY_ARGUMENTS:
         printf("Too many arguments to function %s.\n", getIdName(node));
+        break;
+    case RETURN_TYPE_UNMATCH:
+        printf("Incompatible return type.\n");
         break;
     case INCOMPATIBLE_ARRAY_DIMENSION:
         printf("Incompatible array dimensions for array ID %s.\n", getIdName(node));
@@ -416,6 +424,13 @@ void processConstValueNode(AST_NODE* constValueNode)
 
 void checkReturnStmt(AST_NODE* returnNode)
 {
+    AST_NODE *returnVal = returnNode->child;
+    visit(returnVal);
+    if (returnVal->dataType != currentFunctionReturnType) {
+        printErrorMsg(returnNode, RETURN_TYPE_UNMATCH);
+    } else if (returnVal->nodeType == IDENTIFIER_NODE && returnVal->semantic_value.identifierSemanticValue.kind == ARRAY_ID) {
+        printErrorMsg(returnNode, RETURN_ARRAY);
+    }
 }
 
 
@@ -529,6 +544,7 @@ void declareFunction(AST_NODE* returnTypeNode)
     symAttr->attr.functionSignature->parameterList = paramList;
     symAttr->attr.functionSignature->returnType = getTypeDescriptor(getIdSymtabEntry(returnTypeNode))->properties.dataType;
 
+    currentFunctionReturnType = getTypeDescriptor(getIdSymtabEntry(returnTypeNode))->properties.dataType;
     visitChildren(blockNode);
     closeScope();
 }
@@ -537,7 +553,6 @@ void declareFunction(AST_NODE* returnTypeNode)
 void processIdentifierNode(AST_NODE* identifierNode)
 {
     // use in assignments and exprs only
-    printf("processIdentifierNode \"%s\"\n", getIdName(identifierNode));
     SymbolTableEntry *sym = retrieveSymbol(getIdName(identifierNode));
     setIdSymtabEntry(identifierNode, sym);
     if (sym == NULL) {
