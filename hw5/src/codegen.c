@@ -8,6 +8,7 @@ const char *REG[] = {
 
 FILE *outfile;
 AST_NODE *curFuncIdNode;
+int cntConst;
 
 void codegenInit() {
     outfile = fopen("output.s", "w");
@@ -109,18 +110,48 @@ void genFloatUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs) {
 }
 
 REGISTER genExpr(AST_NODE *node) {
-    REGISTER lhs, rhs, dst;
+    // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-        // TODO
+        if (EXPRKIND(node) == BINARY_OPERATION) {
+            genExpr(node->child);
+            emit("stmda sp!, {r4}");
+            genExpr(node->child->rightSibling);
+            emit("ldmib sp!, {r5}");
+            emit("mov r6, r4");
+            // TODO float ops
+            genIntBinOp(EXPRBINOP(node), R4, R5, R6);
+        } else {
+            genExpr(node->child);
+            emit("mov r5, r4");
+            // TODO float ops
+            genIntUniOp(EXPRUNIOP(node), R4, R5);
+        }
         break;
     case CONST_VALUE_NODE:
-        // TODO
+        switch (CONSTTYPE(node)) {
+        case INTEGERC:
+            emit("mov r4, #%d", CONSTU(node).intval);
+            break;
+        case FLOATC:
+            // TODO
+            break;
+        case STRINGC:
+            emit(".data");
+            emit("__CONST_%d: .ascii \"%s\\000\"", cntConst, CONSTU(node).sc);
+            emit(".text");
+            emit("ldr r4, =__CONST_%d", cntConst);
+            cntConst++;
+            break;
+        default:
+            ;
+        }
         break;
     case IDENTIFIER_NODE:
         switch (IDKIND(node)) {
         case NORMAL_ID:
-            // TODO
+            // TODO global var, float
+            emit("ldr r4, [fp, #%d]", IDSYM(node)->offset);
             break;
         case ARRAY_ID:
             // TODO

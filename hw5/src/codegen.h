@@ -14,6 +14,8 @@
 #define EXPRKIND(exprNode) (exprNode->semantic_value.exprSemanticValue.kind)
 #define EXPRBINOP(exprNode) (exprNode->semantic_value.exprSemanticValue.op.binaryOp)
 #define EXPRUNIOP(exprNode) (exprNode->semantic_value.exprSemanticValue.op.unaryOp)
+#define CONSTTYPE(constNode) (constNode->semantic_value.const1->const_type)
+#define CONSTU(constNode) (constNode->semantic_value.const1->const_u)
 #define SYMARRPROP(symtabEntry) (symtabEntry->attribute->attr.typeDescriptor->properties.arrayProperties)
 
 typedef enum REGISTER {
