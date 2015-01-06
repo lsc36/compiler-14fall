@@ -174,8 +174,23 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
 }
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
-    // TODO push parameters onto stack
+    int paramCnt = 0;
+    AST_NODE *funcIdNode, *paramListNode;
+    funcIdNode = funcCallStmtNode->child;
+    paramListNode = funcIdNode->rightSibling;
+    if (paramListNode->nodeType != NUL_NODE) {
+        AST_NODE *exprNode[10], *tmp;
+        for (tmp = paramListNode->child; tmp != NULL; tmp = tmp->rightSibling) {
+            exprNode[paramCnt++] = tmp;
+        }
+        int i;
+        for (i = paramCnt - 1; i >= 0; i--) {
+            genExpr(exprNode[i]);
+            emit("stmda sp!, {r4}");
+        }
+    }
     emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
+    if (paramCnt > 0) emit("add sp, sp, #%d", 4 * paramCnt);
 }
 
 void genStmtList(AST_NODE *stmtListNode) {
