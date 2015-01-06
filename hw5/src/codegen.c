@@ -1,6 +1,7 @@
 #include "codegen.h"
 
 FILE *outfile;
+AST_NODE *curFuncIdNode;
 
 void codegenInit() {
     outfile = fopen("output.s", "w");
@@ -18,12 +19,51 @@ void emit(char *fmt, ...) {
     va_end(args);
 }
 
+REGISTER genExpr(AST_NODE *node) {
+    // TODO
+    return R4;
+}
+
 void genGlobalVarDecl(AST_NODE *varDeclListNode) {
     // TODO
 }
 
 void genStmtList(AST_NODE *stmtListNode) {
-    // TODO
+    AST_NODE *child = stmtListNode->child;
+    for (; child != NULL; child = child->rightSibling) {
+        if (child->nodeType == STMT_NODE) {
+            switch (STMTKIND(child)) {
+            case WHILE_STMT:
+                // TODO
+                break;
+            case FOR_STMT:
+                // TODO
+                break;
+            case ASSIGN_STMT:
+                // TODO
+                break;
+            case IF_STMT:
+                // TODO
+                break;
+            case FUNCTION_CALL_STMT:
+                // TODO
+                break;
+            case RETURN_STMT:
+                if (child->child->nodeType != NUL_NODE) {
+                    REGISTER result = genExpr(child->child);
+                    emit("mov r0, %s", REGNAME[result]);
+                }
+                emit("b _end_%s", IDSTR(curFuncIdNode));
+                break;
+            default:
+                ;
+            }
+        } else if (child->nodeType == BLOCK_NODE) {
+            genBlock(child);
+        } else if (child->nodeType == NUL_NODE) {
+            // do nothing
+        }
+    }
 }
 
 void genBlock(AST_NODE *blockNode) {
@@ -131,6 +171,7 @@ void genFunctionDecl(AST_NODE *funcDeclNode) {
     idNode = typeNode->rightSibling;
     paramListNode = idNode->rightSibling;
     blockNode = paramListNode->rightSibling;
+    curFuncIdNode = idNode;
 
     emit(".text");
     emit("_start_%s:", IDSTR(idNode));
