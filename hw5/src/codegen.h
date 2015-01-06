@@ -35,6 +35,8 @@ void genIntUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs);
 void genFloatBinOp(BINARY_OPERATOR op, REGISTER dst, REGISTER lhs, REGISTER rhs);
 void genFloatUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs);
 REGISTER genExpr(AST_NODE *node);
+REGISTER genIntExpr(AST_NODE *node);
+REGISTER genFloatExpr(AST_NODE *node);
 void genGlobalVarDecl(AST_NODE *varDeclListNode);
 void genFuncCall(AST_NODE *funcCallStmtNode);
 void genStmtList(AST_NODE *stmtListNode);

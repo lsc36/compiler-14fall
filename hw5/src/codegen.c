@@ -110,6 +110,11 @@ void genFloatUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs) {
 }
 
 REGISTER genExpr(AST_NODE *node) {
+    if (node->dataType == FLOAT_TYPE) return genFloatExpr(node);
+    return genIntExpr(node);
+}
+
+REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
@@ -121,12 +126,10 @@ REGISTER genExpr(AST_NODE *node) {
             emit("add sp, #4");
             emit("ldr r5, [sp]");
             emit("mov r6, r4");
-            // TODO float ops
             genIntBinOp(EXPRBINOP(node), R4, R5, R6);
         } else {
             genExpr(node->child);
             emit("mov r5, r4");
-            // TODO float ops
             genIntUniOp(EXPRUNIOP(node), R4, R5);
         }
         break;
@@ -134,9 +137,6 @@ REGISTER genExpr(AST_NODE *node) {
         switch (CONSTTYPE(node)) {
         case INTEGERC:
             emit("mov r4, #%d", CONSTU(node).intval);
-            break;
-        case FLOATC:
-            // TODO
             break;
         case STRINGC:
             {
@@ -152,6 +152,7 @@ REGISTER genExpr(AST_NODE *node) {
                 cntConst++;
             }
             break;
+        case FLOATC:
         default:
             ;
         }
@@ -159,7 +160,6 @@ REGISTER genExpr(AST_NODE *node) {
     case IDENTIFIER_NODE:
         switch (IDKIND(node)) {
         case NORMAL_ID:
-            // TODO global var, float
             emit("ldr r4, [fp, #%d]", IDSYM(node)->offset);
             break;
         case ARRAY_ID:
@@ -176,6 +176,62 @@ REGISTER genExpr(AST_NODE *node) {
         ;
     }
     return R4;
+}
+
+REGISTER genFloatExpr(AST_NODE *node) {
+    // XXX stack machine
+    switch (node->nodeType) {
+    case EXPR_NODE:
+        // TODO implicit type cast
+        if (EXPRKIND(node) == BINARY_OPERATION) {
+            genExpr(node->child);
+            emit("vstr.f32 s16, [sp]");
+            emit("sub sp, #4");
+            genExpr(node->child->rightSibling);
+            emit("add sp, #4");
+            emit("vldr.f32 s17, [sp]");
+            emit("vmov.f32 s18, s16");
+            genFloatBinOp(EXPRBINOP(node), S16, S17, S18);
+        } else {
+            genExpr(node->child);
+            emit("vmov.f32 s17, s16");
+            genFloatUniOp(EXPRUNIOP(node), S16, S17);
+        }
+        break;
+    case CONST_VALUE_NODE:
+        switch (CONSTTYPE(node)) {
+        case FLOATC:
+            emit(".data");
+            emit("__CONST_%d: .float %f", cntConst, CONSTU(node).fval);
+            emit(".text");
+            emit("vldr.f32 s16, =__CONST_%d", cntConst);
+            cntConst++;
+            break;
+        case INTEGERC:
+        case STRINGC:
+        default:
+            ;
+        }
+        break;
+    case IDENTIFIER_NODE:
+        switch (IDKIND(node)) {
+        case NORMAL_ID:
+            emit("vldr.f32 s16, [fp, #%d]", IDSYM(node)->offset);
+            break;
+        case ARRAY_ID:
+            // TODO
+            break;
+        default:
+            ;
+        }
+        break;
+    case STMT_NODE:  // FUNCTION_CALL_STMT
+        genFuncCall(node);
+        return S16;
+    default:
+        ;
+    }
+    return S16;
 }
 
 void genGlobalVarDecl(AST_NODE *varDeclListNode) {
@@ -195,18 +251,25 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
         int i = 0;
         for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
             genExpr(exprNode);
-            emit("str r4, [sp, #%d]", (++i) * 4);
+            if (exprNode->dataType == FLOAT_TYPE) {
+                emit("vstr.f32 s16, [sp, #%d]", (++i) * 4);
+            } else {
+                emit("str r4, [sp, #%d]", (++i) * 4);
+            }
         }
     }
     // special cases for read/write
     if (strcmp(IDSTR(funcCallStmtNode->child), "read") == 0) {
         // TODO
     } else if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
-        emit("ldr r0, [sp, #4]");
-        if (paramListNode->child->nodeType == CONST_VALUE_NODE && CONSTTYPE(paramListNode->child) == STRINGC) {
+        if (paramListNode->child->dataType == CONST_STRING_TYPE) {
+            emit("ldr r0, [sp, #4]");
             emit("bl _write_str");
+        } else if (paramListNode->child->dataType == FLOAT_TYPE) {
+            emit("vldr.f32 s0, [sp, #4]");
+            emit("bl _write_float");
         } else {
-            // TODO float
+            emit("ldr r0, [sp, #4]");
             emit("bl _write_int");
         }
     } else {
@@ -230,7 +293,11 @@ void genStmtList(AST_NODE *stmtListNode) {
                 // TODO global var, array
                 {
                     REGISTER result = genExpr(child->child->rightSibling);
-                    emit("str %s, [fp, #%d]", REG[result], IDSYM(child->child)->offset);
+                    if (child->child->dataType == FLOAT_TYPE) {
+                        emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(child->child)->offset);
+                    } else {
+                        emit("str %s, [fp, #%d]", REG[result], IDSYM(child->child)->offset);
+                    }
                 }
                 break;
             case IF_STMT:
@@ -242,7 +309,11 @@ void genStmtList(AST_NODE *stmtListNode) {
             case RETURN_STMT:
                 if (child->child->nodeType != NUL_NODE) {
                     REGISTER result = genExpr(child->child);
-                    if (result != R0) emit("mov r0, %s", REG[result]);
+                    if (child->child->dataType == FLOAT_TYPE) {
+                        if (result != S0) emit("vmov.f32 s0, %s", REG[result]);
+                    } else {
+                        if (result != R0) emit("mov r0, %s", REG[result]);
+                    }
                 }
                 emit("b _end_%s", IDSTR(curFuncIdNode));
                 break;
@@ -270,7 +341,11 @@ void genBlock(AST_NODE *blockNode) {
                     if (IDKIND(idNode) == WITH_INIT_ID) {
                         // TODO float
                         REGISTER result = genExpr(idNode->child);
-                        emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                        if (idNode->dataType == FLOAT_TYPE) {
+                            emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                        } else {
+                            emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                        }
                     }
                 }
             }
