@@ -20,12 +20,42 @@ void emit(char *fmt, ...) {
 }
 
 REGISTER genExpr(AST_NODE *node) {
+    switch (node->nodeType) {
+    case EXPR_NODE:
+        // TODO
+        break;
+    case CONST_VALUE_NODE:
+        // TODO
+        break;
+    case IDENTIFIER_NODE:
+        switch (IDKIND(node)) {
+        case NORMAL_ID:
+            // TODO
+            break;
+        case ARRAY_ID:
+            // TODO
+            break;
+        default:
+            ;
+        }
+        break;
+    case STMT_NODE:  // FUNCTION_CALL_STMT
+        genFuncCall(node);
+        return R0;
+    default:
+        ;
+    }
     // TODO
     return R4;
 }
 
 void genGlobalVarDecl(AST_NODE *varDeclListNode) {
     // TODO
+}
+
+void genFuncCall(AST_NODE *funcCallStmtNode) {
+    // TODO push parameters onto stack
+    emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
 }
 
 void genStmtList(AST_NODE *stmtListNode) {
@@ -46,12 +76,12 @@ void genStmtList(AST_NODE *stmtListNode) {
                 // TODO
                 break;
             case FUNCTION_CALL_STMT:
-                // TODO
+                genFuncCall(child);
                 break;
             case RETURN_STMT:
                 if (child->child->nodeType != NUL_NODE) {
                     REGISTER result = genExpr(child->child);
-                    emit("mov r0, %s", REGNAME[result]);
+                    if (result != R0) emit("mov r0, %s", REG[result]);
                 }
                 emit("b _end_%s", IDSTR(curFuncIdNode));
                 break;
