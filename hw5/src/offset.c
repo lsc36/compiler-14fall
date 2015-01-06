@@ -40,6 +40,18 @@ void countParamOffset(AST_NODE *paramListNode){
 	}
 }
 
+
+
+int countArraySize(SymbolTableEntry *arrayID) {
+	int dim;
+	int product = 1;
+	ArrayProperties properties = arrayID->attribute->attr.typeDescriptor->properties.arrayProperties;
+	for (dim = 0; dim < properties.dimension; dim++) {
+		product *= properties.sizeInEachDimension[dim];
+	}
+	return product;
+}
+
 // 計算在block內的offset
 void countVariableOffset(AST_NODE *blockNode) {
 	
@@ -53,8 +65,13 @@ void countVariableOffset(AST_NODE *blockNode) {
 			AST_NODE *id = decl->child->rightSibling;
 			for (;id != NULL; id = id->rightSibling) {
 				SymbolTableEntry *entry = getSymboltableEntry(id);
+				if (entry->attribute->attr.typeDescriptor->kind == ARRAY_TYPE_DESCRIPTOR) {
+					OffsetInFunction -= (countArraySize(entry) * 4);
+				}
+				else {
+					OffsetInFunction -= 4;
+				}
 				entry->offset = OffsetInFunction;
-				OffsetInFunction -= 4;
 				/* fprintf(stderr, "variable %s offset is %d\n", getIdName(id), entry->offset); */
 			}
 		}
@@ -67,7 +84,7 @@ void traverseNode(AST_NODE *node) {
 	AST_NODE *child = node->child;
 
 	if (isFunctionDecl(node)) {
-		OffsetInFunction = -4;
+		OffsetInFunction = 0;
 		/* fprintf(stderr, "capture function %s\n", getFunctionName(node)); */
 		for (; child != NULL; child = child->rightSibling) {
 			traverseNode(child);
