@@ -25,7 +25,91 @@ void emit(char *fmt, ...) {
     va_end(args);
 }
 
+REGISTER allocateRegister(SymbolTableEntry *sym) {
+    // TODO
+    return R4;
+}
+
+void genIntBinOp(BINARY_OPERATOR op, REGISTER dst, REGISTER lhs, REGISTER rhs) {
+    switch (op) {
+    case BINARY_OP_ADD: emit("add %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_SUB: emit("sub %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_MUL: emit("mul %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_DIV: emit("sdiv %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_AND: emit("and %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_OR: emit("orr %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_EQ: case BINARY_OP_GE: case BINARY_OP_LE:
+    case BINARY_OP_NE: case BINARY_OP_GT: case BINARY_OP_LT:
+        emit("mov %s, #0", REG[dst]);
+        emit("cmp %s, %s", REG[lhs], REG[rhs]);
+        switch (op) {
+        case BINARY_OP_EQ: emit("moveq %s, #1", REG[dst]); break;
+        case BINARY_OP_GE: emit("movge %s, #1", REG[dst]); break;
+        case BINARY_OP_LE: emit("movle %s, #1", REG[dst]); break;
+        case BINARY_OP_NE: emit("movne %s, #1", REG[dst]); break;
+        case BINARY_OP_GT: emit("movgt %s, #1", REG[dst]); break;
+        case BINARY_OP_LT: emit("movlt %s, #1", REG[dst]); break;
+        }
+        break;
+    default: ;
+    }
+}
+
+void genIntUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs) {
+    switch (op) {
+    case UNARY_OP_POSITIVE: emit("mov %s, %s", REG[dst], REG[lhs]); break;
+    case UNARY_OP_NEGATIVE: emit("neg %s, %s", REG[dst], REG[lhs]); break;
+    case UNARY_OP_LOGICAL_NEGATION:
+        emit("cmp %s, #0", REG[lhs]);
+        emit("moveq %s, #1", REG[dst]);
+        emit("movne %s, #0", REG[dst]);
+        break;
+    default: ;
+    }
+}
+
+void genFloatBinOp(BINARY_OPERATOR op, REGISTER dst, REGISTER lhs, REGISTER rhs) {
+    switch (op) {
+    case BINARY_OP_ADD: emit("vadd.f32 %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_SUB: emit("vsub.f32 %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_MUL: emit("vmul.f32 %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_DIV: emit("vdiv.f32 %s, %s, %s", REG[dst], REG[lhs], REG[rhs]); break;
+    case BINARY_OP_AND: break;
+    case BINARY_OP_OR: break;
+    case BINARY_OP_EQ: case BINARY_OP_GE: case BINARY_OP_LE:
+    case BINARY_OP_NE: case BINARY_OP_GT: case BINARY_OP_LT:
+        emit("mov %s, #0", REG[dst]);
+        emit("vcmp.f32 %s, %s", REG[lhs], REG[rhs]);
+        emit("vmrs apsr_nzcv, fpscr");
+        switch (op) {
+        case BINARY_OP_EQ: emit("moveq %s, #1", REG[dst]); break;
+        case BINARY_OP_GE: emit("movge %s, #1", REG[dst]); break;
+        case BINARY_OP_LE: emit("movle %s, #1", REG[dst]); break;
+        case BINARY_OP_NE: emit("movne %s, #1", REG[dst]); break;
+        case BINARY_OP_GT: emit("movgt %s, #1", REG[dst]); break;
+        case BINARY_OP_LT: emit("movlt %s, #1", REG[dst]); break;
+        }
+        break;
+    default: ;
+    }
+}
+
+void genFloatUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs) {
+    switch (op) {
+    case UNARY_OP_POSITIVE: emit("vmov.f32 %s, %s", REG[dst], REG[lhs]); break;
+    case UNARY_OP_NEGATIVE: emit("vneg.f32 %s, %s", REG[dst], REG[lhs]); break;
+    case UNARY_OP_LOGICAL_NEGATION:
+        emit("vcmp.f32 %s, #0", REG[lhs]);
+        emit("vmrs apsr_nzcv, fpscr");
+        emit("moveq %s, #1", REG[dst]);
+        emit("movne %s, #0", REG[dst]);
+        break;
+    default: ;
+    }
+}
+
 REGISTER genExpr(AST_NODE *node) {
+    REGISTER lhs, rhs, dst;
     switch (node->nodeType) {
     case EXPR_NODE:
         // TODO
@@ -51,7 +135,6 @@ REGISTER genExpr(AST_NODE *node) {
     default:
         ;
     }
-    // TODO
     return R4;
 }
 

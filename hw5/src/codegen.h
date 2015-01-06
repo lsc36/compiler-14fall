@@ -11,6 +11,9 @@
 #define IDSYM(idNode) (idNode->semantic_value.identifierSemanticValue.symbolTableEntry)
 #define DECLKIND(declNode) (declNode->semantic_value.declSemanticValue.kind)
 #define STMTKIND(stmtNode) (stmtNode->semantic_value.stmtSemanticValue.kind)
+#define EXPRKIND(exprNode) (exprNode->semantic_value.exprSemanticValue.kind)
+#define EXPRBINOP(exprNode) (exprNode->semantic_value.exprSemanticValue.op.binaryOp)
+#define EXPRUNIOP(exprNode) (exprNode->semantic_value.exprSemanticValue.op.unaryOp)
 #define SYMARRPROP(symtabEntry) (symtabEntry->attribute->attr.typeDescriptor->properties.arrayProperties)
 
 typedef enum REGISTER {
@@ -22,6 +25,12 @@ typedef enum REGISTER {
 void emit(char *fmt, ...);
 int calcBlockOffset(AST_NODE *blockNode);
 
+REGISTER allocateRegister(SymbolTableEntry *sym);
+
+void genIntBinOp(BINARY_OPERATOR op, REGISTER dst, REGISTER lhs, REGISTER rhs);
+void genIntUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs);
+void genFloatBinOp(BINARY_OPERATOR op, REGISTER dst, REGISTER lhs, REGISTER rhs);
+void genFloatUniOp(UNARY_OPERATOR op, REGISTER dst, REGISTER lhs);
 REGISTER genExpr(AST_NODE *node);
 void genGlobalVarDecl(AST_NODE *varDeclListNode);
 void genFuncCall(AST_NODE *funcCallStmtNode);
