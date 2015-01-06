@@ -212,7 +212,11 @@ void genStmtList(AST_NODE *stmtListNode) {
                 // TODO
                 break;
             case ASSIGN_STMT:
-                // TODO
+                // TODO global var, array
+                {
+                    REGISTER result = genExpr(child->child->rightSibling);
+                    emit("str %s, [fp, #%d]", REG[result], IDSYM(child->child)->offset);
+                }
                 break;
             case IF_STMT:
                 // TODO
@@ -249,7 +253,9 @@ void genBlock(AST_NODE *blockNode) {
                 idNode = typeNode->rightSibling;
                 for (; idNode != NULL; idNode = idNode->rightSibling) {
                     if (IDKIND(idNode) == WITH_INIT_ID) {
-                        // TODO assign init value
+                        // TODO float
+                        REGISTER result = genExpr(idNode->child);
+                        emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
                     }
                 }
             }
