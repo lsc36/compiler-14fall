@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "header.h"
+#include "symbolTable.h"
 
 void codegen(AST_NODE *root);
 
