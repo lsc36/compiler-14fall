@@ -211,6 +211,20 @@ void genFunctionDecl(AST_NODE *funcDeclNode) {
 
     int frameSize = calcBlockOffset(blockNode);
     emit("sub sp, fp, #%d", 4 + frameSize + 64);
+    emit("bl __callee_reg_save");
+
+    genBlock(blockNode);
+
+    emit("_end_%s:", IDSTR(idNode));
+    emit("bl __callee_reg_restore");
+    emit("ldr lr, [fp, #4]");
+    emit("add sp, fp, #4");
+    emit("ldr fp, [fp, #0]");
+    emit("bx lr");
+}
+
+void genCalleeSaveRestore() {
+    emit("__callee_reg_save:");
     emit("str r4, [sp, #4]");
     emit("str r5, [sp, #8]");
     emit("str r6, [sp, #12]");
@@ -227,10 +241,8 @@ void genFunctionDecl(AST_NODE *funcDeclNode) {
     emit("vstr.f32 s21, [sp, #56]");
     emit("vstr.f32 s22, [sp, #60]");
     emit("vstr.f32 s23, [sp, #64]");
-
-    genBlock(blockNode);
-
-    emit("_end_%s:", IDSTR(idNode));
+    emit("bx lr");
+    emit("__callee_reg_restore:");
     emit("ldr r4, [sp, #4]");
     emit("ldr r5, [sp, #8]");
     emit("ldr r6, [sp, #12]");
@@ -247,9 +259,6 @@ void genFunctionDecl(AST_NODE *funcDeclNode) {
     emit("vldr.f32 s21, [sp, #56]");
     emit("vldr.f32 s22, [sp, #60]");
     emit("vldr.f32 s23, [sp, #64]");
-    emit("ldr lr, [fp, #4]");
-    emit("add sp, fp, #4");
-    emit("ldr fp, [fp, #0]");
     emit("bx lr");
 }
 
@@ -265,5 +274,6 @@ void codegen(AST_NODE *root) {
         genFunctionDecl(child);
     }
 
+    genCalleeSaveRestore();
     codegenEnd();
 }
