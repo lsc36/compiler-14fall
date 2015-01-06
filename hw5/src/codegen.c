@@ -137,11 +137,18 @@ REGISTER genExpr(AST_NODE *node) {
             // TODO
             break;
         case STRINGC:
-            emit(".data");
-            emit("__CONST_%d: .ascii \"%s\\000\"", cntConst, CONSTU(node).sc);
-            emit(".text");
-            emit("ldr r4, =__CONST_%d", cntConst);
-            cntConst++;
+            {
+                char buf[256];
+                int i;
+                strncpy(buf, CONSTU(node).sc, 256);
+                for (i = 1; buf[i] != '"'; i++);
+                buf[i] = '\0';
+                emit(".data");
+                emit("__CONST_%d: .ascii \"%s\\000\"", cntConst, buf + 1);
+                emit(".text");
+                emit("ldr r4, =__CONST_%d", cntConst);
+                cntConst++;
+            }
             break;
         default:
             ;

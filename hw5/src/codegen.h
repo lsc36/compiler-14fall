@@ -2,6 +2,7 @@
 #define __CODEGEN_H__
 
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include "header.h"
 #include "symbolTable.h"
