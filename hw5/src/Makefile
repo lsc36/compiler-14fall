@@ -1,5 +1,5 @@
 TARGET = parser
-OBJECT = parser.tab.o alloc.o functions.o semanticAnalysis.o symbolTable.o codegen.o
+OBJECT = parser.tab.o alloc.o functions.o semanticAnalysis.o symbolTable.o offset.o codegen.o
 OUTPUT = parser.output parser.tab.h
 CC = gcc -g
 LEX = flex

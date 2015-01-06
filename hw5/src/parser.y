@@ -8,6 +8,7 @@
 #include "header.h"
 #include "symbolTable.h"
 #include "codegen.h"
+#include "offset.h"
 int linenumber = 1;
 AST_NODE *prog;
 
@@ -766,6 +767,8 @@ char *argv[];
      initializeSymbolTable();
 
      semanticAnalysis(prog);
+	
+     offsetAnalysis(prog);
 
      codegen(prog);
 
