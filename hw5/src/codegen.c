@@ -182,11 +182,10 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
     int paramCnt = 0;
-    AST_NODE *funcIdNode, *paramListNode;
+    AST_NODE *funcIdNode, *paramListNode, *exprNode[10], *tmp;
     funcIdNode = funcCallStmtNode->child;
     paramListNode = funcIdNode->rightSibling;
     if (paramListNode->nodeType != NUL_NODE) {
-        AST_NODE *exprNode[10], *tmp;
         for (tmp = paramListNode->child; tmp != NULL; tmp = tmp->rightSibling) {
             exprNode[paramCnt++] = tmp;
         }
@@ -196,7 +195,20 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
             emit("stmda sp!, {r4}");
         }
     }
-    emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
+    // special cases for read/write
+    if (strcmp(IDSTR(funcCallStmtNode->child), "read") == 0) {
+        // TODO
+    } else if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
+        emit("ldr r0, [sp, #4]");
+        if (exprNode[0]->nodeType == CONST_VALUE_NODE && CONSTTYPE(exprNode[0]) == STRINGC) {
+            emit("bl _write_str");
+        } else {
+            // TODO float
+            emit("bl _write_int");
+        }
+    } else {
+        emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
+    }
     if (paramCnt > 0) emit("add sp, sp, #%d", 4 * paramCnt);
 }
 
