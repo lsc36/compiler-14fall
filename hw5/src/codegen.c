@@ -115,9 +115,11 @@ REGISTER genExpr(AST_NODE *node) {
     case EXPR_NODE:
         if (EXPRKIND(node) == BINARY_OPERATION) {
             genExpr(node->child);
-            emit("stmda sp!, {r4}");
+            emit("str r4, [sp]");
+            emit("sub sp, #4");
             genExpr(node->child->rightSibling);
-            emit("ldmib sp!, {r5}");
+            emit("add sp, #4");
+            emit("ldr r5, [sp]");
             emit("mov r6, r4");
             // TODO float ops
             genIntBinOp(EXPRBINOP(node), R4, R5, R6);
@@ -182,17 +184,18 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
     int paramCnt = 0;
-    AST_NODE *funcIdNode, *paramListNode, *exprNode[10], *tmp;
+    AST_NODE *funcIdNode, *paramListNode, *exprNode;
     funcIdNode = funcCallStmtNode->child;
     paramListNode = funcIdNode->rightSibling;
     if (paramListNode->nodeType != NUL_NODE) {
-        for (tmp = paramListNode->child; tmp != NULL; tmp = tmp->rightSibling) {
-            exprNode[paramCnt++] = tmp;
+        for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
+            paramCnt++;
         }
-        int i;
-        for (i = paramCnt - 1; i >= 0; i--) {
-            genExpr(exprNode[i]);
-            emit("stmda sp!, {r4}");
+        emit("sub sp, sp, #%d", 4 * paramCnt);
+        int i = 0;
+        for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
+            genExpr(exprNode);
+            emit("str r4, [sp, #%d]", (++i) * 4);
         }
     }
     // special cases for read/write
@@ -200,7 +203,7 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
         // TODO
     } else if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
         emit("ldr r0, [sp, #4]");
-        if (exprNode[0]->nodeType == CONST_VALUE_NODE && CONSTTYPE(exprNode[0]) == STRINGC) {
+        if (paramListNode->child->nodeType == CONST_VALUE_NODE && CONSTTYPE(paramListNode->child) == STRINGC) {
             emit("bl _write_str");
         } else {
             // TODO float
