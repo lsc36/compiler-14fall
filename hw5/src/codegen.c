@@ -247,38 +247,38 @@ REGISTER genFloatExpr(AST_NODE *node) {
 
 void genGlobalVarDecl(AST_NODE *varDeclListNode) {
     // TODO declare global array
-	emit(".data");
-	
-	AST_NODE *declNode = varDeclListNode->child;
-	for (; declNode != NULL; declNode = declNode->rightSibling) {
-		// get type
-		if (DECLKIND(declNode) == VARIABLE_DECL) {
-			char *typeMark;
-			AST_NODE *typeNode = declNode->child, *idNode = typeNode->rightSibling;
-			SymbolTableEntry *idSym = IDSYM(idNode);
-			DATA_TYPE type = idSym->attribute->attr.typeDescriptor->properties.dataType;
+    emit(".data");
 
-			for (; idNode != NULL; idNode = idNode->rightSibling) {
-				char name[300];
-				sprintf(name, "_g_%s", IDSTR(idNode));
-				if (type == INT_TYPE) {
-					int value = 0;
-					typeMark = ".word";
-					if (idNode->child != 0) {
-						value = idNode->child->semantic_value.const1->const_u.intval;
-					}
-					emit("%s: %s %d", name, typeMark, value);
-				} else if (type == FLOAT_TYPE) {
-					double value = 0.0;
-					typeMark = ".float";
-					if (idNode->child != 0) {
-						value = idNode->child->semantic_value.const1->const_u.fval;
-					}
-					emit("%s: %s %lf", name, typeMark, value);
-				}
-			}
-		}
-	}
+    AST_NODE *declNode = varDeclListNode->child;
+    for (; declNode != NULL; declNode = declNode->rightSibling) {
+        // get type
+        if (DECLKIND(declNode) == VARIABLE_DECL) {
+            char *typeMark;
+            AST_NODE *typeNode = declNode->child, *idNode = typeNode->rightSibling;
+            SymbolTableEntry *idSym = IDSYM(idNode);
+            DATA_TYPE type = idSym->attribute->attr.typeDescriptor->properties.dataType;
+
+            for (; idNode != NULL; idNode = idNode->rightSibling) {
+                char name[300];
+                sprintf(name, "_g_%s", IDSTR(idNode));
+                if (type == INT_TYPE) {
+                    int value = 0;
+                    typeMark = ".word";
+                    if (idNode->child != 0) {
+                        value = idNode->child->semantic_value.const1->const_u.intval;
+                    }
+                    emit("%s: %s %d", name, typeMark, value);
+                } else if (type == FLOAT_TYPE) {
+                    double value = 0.0;
+                    typeMark = ".float";
+                    if (idNode->child != 0) {
+                        value = idNode->child->semantic_value.const1->const_u.fval;
+                    }
+                    emit("%s: %s %lf", name, typeMark, value);
+                }
+            }
+        }
+    }
 }
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
