@@ -161,8 +161,8 @@ REGISTER genIntExpr(AST_NODE *node) {
         switch (IDKIND(node)) {
         case NORMAL_ID:
             if (IDSYM(node)->nestingLevel == 0) {
-                emit("ldr r4, =_g_%s", IDSTR(node));
-                emit("ldr r4, [r4]");
+                emit("ldr r7, =_g_%s", IDSTR(node));
+                emit("ldr r4, [r7]");
             } else {
                 emit("ldr r4, [fp, #%d]", IDSYM(node)->offset);
             }
@@ -223,8 +223,8 @@ REGISTER genFloatExpr(AST_NODE *node) {
         switch (IDKIND(node)) {
         case NORMAL_ID:
             if (IDSYM(node)->nestingLevel == 0) {
-                emit("ldr r4, =_g_%s", IDSTR(node));
-                emit("vldr.f32 s16, [r4]");
+                emit("ldr r7, =_g_%s", IDSTR(node));
+                emit("vldr.f32 s16, [r7]");
             } else {
                 emit("vldr.f32 s16, [fp, #%d]", IDSYM(node)->offset);
             }
@@ -325,16 +325,16 @@ void genAssign(AST_NODE *stmtNode) {
     REGISTER result = genExpr(stmtNode->child->rightSibling);
     if (stmtNode->child->dataType == FLOAT_TYPE) {
         if (IDSYM(stmtNode->child)->nestingLevel == 0) {
-            emit("ldr r4, =_g_%s", IDSTR(stmtNode->child));
-            emit("vstr.f32 %s, [r4]", REG[result]);
+            emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
+            emit("vstr.f32 %s, [r7]", REG[result]);
         } else {
             emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
         }
         if (result != S16) emit("vmov.f32 s16, %s", REG[result]);
     } else {
         if (IDSYM(stmtNode->child)->nestingLevel == 0) {
-            emit("ldr r4, =_g_%s", IDSTR(stmtNode->child));
-            emit("str %s, [r4]", REG[result]);
+            emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
+            emit("str %s, [r7]", REG[result]);
         } else {
             emit("str %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
         }
