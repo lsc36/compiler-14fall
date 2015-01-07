@@ -199,11 +199,23 @@ REGISTER genFloatExpr(AST_NODE *node) {
             emit("add sp, #4");
             emit("vldr.f32 s17, [sp]");
             emit("vmov.f32 s18, s16");
-            genFloatBinOp(EXPRBINOP(node), S16, S17, S18);
+            switch (EXPRBINOP(node)) {
+            case BINARY_OP_EQ: case BINARY_OP_GE: case BINARY_OP_LE:
+            case BINARY_OP_NE: case BINARY_OP_GT: case BINARY_OP_LT:
+                genFloatBinOp(EXPRBINOP(node), R4, S17, S18);
+                return R4;
+            default:
+                genFloatBinOp(EXPRBINOP(node), S16, S17, S18);
+            }
         } else {
             genExpr(node->child);
             emit("vmov.f32 s17, s16");
-            genFloatUniOp(EXPRUNIOP(node), S16, S17);
+            if (EXPRUNIOP(node) == UNARY_OP_LOGICAL_NEGATION) {
+                genFloatUniOp(EXPRUNIOP(node), R4, S17);
+                return R4;
+            } else {
+                genFloatUniOp(EXPRUNIOP(node), S16, S17);
+            }
         }
         break;
     case CONST_VALUE_NODE:
@@ -356,7 +368,7 @@ void genIf(AST_NODE *stmtNode) {
     } else {
         result = genExpr(stmtNode->child);
     }
-    if (stmtNode->child->dataType == FLOAT_TYPE) {
+    if (S0 <= result && result <= S31) {
         emit("vcmp.f32 %s, #0.0", REG[result]);
         emit("vmrs apsr_nzcv, fpscr");
         emit("beq __if_end_%d", idIf);
@@ -394,7 +406,7 @@ void genStmt(AST_NODE *stmtNode) {
             } else {
                 result = genExpr(stmtNode->child);
             }
-            if (stmtNode->child->dataType == FLOAT_TYPE) {
+            if (S0 <= result && result <= S31) {
                 emit("vcmp.f32 %s, #0.0", REG[result]);
                 emit("vmrs apsr_nzcv, fpscr");
                 emit("beq __while_end_%d", idWhile);
