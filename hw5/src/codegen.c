@@ -228,7 +228,7 @@ REGISTER genFloatExpr(AST_NODE *node) {
         break;
     case STMT_NODE:  // FUNCTION_CALL_STMT
         genFuncCall(node);
-        return S16;
+        return S0;
     default:
         ;
     }
@@ -244,9 +244,7 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
     funcIdNode = funcCallStmtNode->child;
     paramListNode = funcIdNode->rightSibling;
     // special cases for read/write
-    if (strcmp(IDSTR(funcCallStmtNode->child), "read") == 0) {
-        // TODO
-    } else if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
+    if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
         REGISTER reg = genExpr(paramListNode->child);
         if (paramListNode->child->dataType == CONST_STRING_TYPE) {
             emit("mov r0, %s", REG[reg]);
@@ -503,6 +501,13 @@ void genCalleeSaveRestore() {
     emit("bx lr");
 }
 
+void genReadStub() {
+    emit("_start_read:");
+    emit("b _read_int");
+    emit("_start_fread:");
+    emit("b _read_float");
+}
+
 void codegen(AST_NODE *root) {
     codegenInit();
 
@@ -516,5 +521,6 @@ void codegen(AST_NODE *root) {
     }
 
     genCalleeSaveRestore();
+    genReadStub();
     codegenEnd();
 }

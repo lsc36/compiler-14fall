@@ -42,6 +42,8 @@ void genFuncCall(AST_NODE *funcCallStmtNode);
 void genStmtList(AST_NODE *stmtListNode);
 void genBlock(AST_NODE *blockNode);
 void genFunctionDecl(AST_NODE *funcDeclNode);
+void genCalleeSaveRestore();
+void genReadStub();
 
 void codegen(AST_NODE *root);
 
