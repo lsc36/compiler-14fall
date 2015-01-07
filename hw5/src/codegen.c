@@ -383,7 +383,7 @@ void genIf(AST_NODE *stmtNode) {
     }
     emit("b __else_end_%d", idElse);
     emit("__if_end_%d:", idIf);
-    if (elseNode == NULL) {
+    if (elseNode->nodeType != NUL_NODE) {
         if (elseNode->nodeType == STMT_NODE) {
             genStmt(elseNode);
         } else if (elseNode->nodeType == BLOCK_NODE) {
