@@ -9,6 +9,7 @@ const char *REG[] = {
 FILE *outfile;
 AST_NODE *curFuncIdNode;
 int cntConst;
+int cntWhile;
 
 void codegenInit() {
     outfile = fopen("output.s", "w");
@@ -345,7 +346,34 @@ void genAssign(AST_NODE *stmtNode) {
 void genStmt(AST_NODE *stmtNode) {
     switch (STMTKIND(stmtNode)) {
     case WHILE_STMT:
-        // TODO
+        {
+            int idWhile = cntWhile++;
+            REGISTER result;
+            emit("__while_start_%d:", idWhile);
+            if (stmtNode->child->nodeType == STMT_NODE && STMTKIND(stmtNode->child) == ASSIGN_STMT) {
+                genAssign(stmtNode->child);
+                result = (stmtNode->child->dataType == FLOAT_TYPE) ? S16 : R4;
+            } else {
+                result = genExpr(stmtNode->child);
+            }
+            if (stmtNode->child->dataType == FLOAT_TYPE) {
+                emit("vcmp.f32 %s, #0.0", REG[result]);
+                emit("vmrs apsr_nzcv, fpscr");
+                emit("beq __while_end_%d", idWhile);
+            } else {
+                emit("cmp %s, #0", REG[result]);
+                emit("beq __while_end_%d", idWhile);
+            }
+            if (stmtNode->child->rightSibling->nodeType == STMT_NODE) {
+                genStmt(stmtNode->child->rightSibling);
+            } else if (stmtNode->child->rightSibling->nodeType == BLOCK_NODE) {
+                genBlock(stmtNode->child->rightSibling);
+            } else if (stmtNode->child->rightSibling->nodeType == NUL_NODE) {
+                // do nothing
+            }
+            emit("b __while_start_%d", idWhile);
+            emit("__while_end_%d:", idWhile);
+        }
         break;
     case FOR_STMT:
         // TODO
