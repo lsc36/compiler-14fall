@@ -39,6 +39,8 @@ REGISTER genIntExpr(AST_NODE *node);
 REGISTER genFloatExpr(AST_NODE *node);
 void genGlobalVarDecl(AST_NODE *varDeclListNode);
 void genFuncCall(AST_NODE *funcCallStmtNode);
+void genAssign(AST_NODE *stmtNode);
+void genStmt(AST_NODE *stmtNode);
 void genStmtList(AST_NODE *stmtListNode);
 void genBlock(AST_NODE *blockNode);
 void genFunctionDecl(AST_NODE *funcDeclNode);
