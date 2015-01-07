@@ -204,7 +204,8 @@ REGISTER genFloatExpr(AST_NODE *node) {
             emit(".data");
             emit("__CONST_%d: .float %f", cntConst, CONSTU(node).fval);
             emit(".text");
-            emit("vldr.f32 s16, =__CONST_%d", cntConst);
+            emit("ldr r4, =__CONST_%d", cntConst);
+            emit("vldr.f32 s16, [r4]");
             cntConst++;
             break;
         case INTEGERC:
@@ -239,43 +240,44 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
 }
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
-    int paramCnt = 0;
     AST_NODE *funcIdNode, *paramListNode, *exprNode;
     funcIdNode = funcCallStmtNode->child;
     paramListNode = funcIdNode->rightSibling;
-    if (paramListNode->nodeType != NUL_NODE) {
-        for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
-            paramCnt++;
-        }
-        emit("sub sp, sp, #%d", 4 * paramCnt);
-        int i = 0;
-        for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
-            genExpr(exprNode);
-            if (exprNode->dataType == FLOAT_TYPE) {
-                emit("vstr.f32 s16, [sp, #%d]", (++i) * 4);
-            } else {
-                emit("str r4, [sp, #%d]", (++i) * 4);
-            }
-        }
-    }
     // special cases for read/write
     if (strcmp(IDSTR(funcCallStmtNode->child), "read") == 0) {
         // TODO
     } else if (strcmp(IDSTR(funcCallStmtNode->child), "write") == 0) {
+        REGISTER reg = genExpr(paramListNode->child);
         if (paramListNode->child->dataType == CONST_STRING_TYPE) {
-            emit("ldr r0, [sp, #4]");
+            emit("mov r0, %s", REG[reg]);
             emit("bl _write_str");
         } else if (paramListNode->child->dataType == FLOAT_TYPE) {
-            emit("vldr.f32 s0, [sp, #4]");
+            emit("vmov.f32 s0, %s", REG[reg]);
             emit("bl _write_float");
         } else {
-            emit("ldr r0, [sp, #4]");
+            emit("mov r0, %s", REG[reg]);
             emit("bl _write_int");
         }
     } else {
+        int paramCnt = 0;
+        if (paramListNode->nodeType != NUL_NODE) {
+            for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
+                paramCnt++;
+            }
+            emit("sub sp, sp, #%d", 4 * paramCnt);
+            int i = 0;
+            for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
+                genExpr(exprNode);
+                if (exprNode->dataType == FLOAT_TYPE) {
+                    emit("vstr.f32 s16, [sp, #%d]", (++i) * 4);
+                } else {
+                    emit("str r4, [sp, #%d]", (++i) * 4);
+                }
+            }
+        }
         emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
+        if (paramCnt > 0) emit("add sp, sp, #%d", 4 * paramCnt);
     }
-    if (paramCnt > 0) emit("add sp, sp, #%d", 4 * paramCnt);
 }
 
 void genStmtList(AST_NODE *stmtListNode) {
@@ -449,6 +451,7 @@ void genFunctionDecl(AST_NODE *funcDeclNode) {
 
     int frameSize = calcBlockOffset(blockNode);
     emit("sub sp, fp, #%d", 4 + frameSize + 64);
+    emit("and sp, sp, #0xfffffff0");  // stack align
     emit("bl __callee_reg_save");
 
     genBlock(blockNode);
