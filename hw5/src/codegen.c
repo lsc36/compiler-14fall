@@ -12,6 +12,7 @@ int cntConst;
 int cntWhile;
 int cntElse;
 int cntIf;
+int cntfunc; // make function call easy to read
 
 void codegenInit() {
     outfile = fopen("output.s", "w");
@@ -122,13 +123,13 @@ REGISTER genIntExpr(AST_NODE *node) {
     switch (node->nodeType) {
     case EXPR_NODE:
         if (EXPRKIND(node) == BINARY_OPERATION) {
-            genExpr(node->child);
-            emit("str r4, [sp]");
+            REGISTER res = genExpr(node->child);
+            emit("str %s, [sp]", REG[res]);
             emit("sub sp, #4");
-            genExpr(node->child->rightSibling);
+            res = genExpr(node->child->rightSibling);
             emit("add sp, #4");
             emit("ldr r5, [sp]");
-            emit("mov r6, r4");
+            emit("mov r6, %s", REG[res]);
             genIntBinOp(EXPRBINOP(node), R4, R5, R6);
         } else {
             genExpr(node->child);
@@ -192,10 +193,10 @@ REGISTER genFloatExpr(AST_NODE *node) {
     case EXPR_NODE:
         // TODO implicit type cast
         if (EXPRKIND(node) == BINARY_OPERATION) {
-            genExpr(node->child);
+            REGISTER res = genExpr(node->child);
             emit("vstr.f32 s16, [sp]");
             emit("sub sp, #4");
-            genExpr(node->child->rightSibling);
+            res = genExpr(node->child->rightSibling);
             emit("add sp, #4");
             emit("vldr.f32 s17, [sp]");
             emit("vmov.f32 s18, s16");
@@ -297,6 +298,7 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
 }
 
 void genFuncCall(AST_NODE *funcCallStmtNode) {
+    emit("func_call_%d:", cntfunc++);
     AST_NODE *funcIdNode, *paramListNode, *exprNode;
     funcIdNode = funcCallStmtNode->child;
     paramListNode = funcIdNode->rightSibling;
