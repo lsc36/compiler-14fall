@@ -132,8 +132,8 @@ REGISTER genIntExpr(AST_NODE *node) {
             emit("mov r6, %s", REG[res]);
             genIntBinOp(EXPRBINOP(node), R4, R5, R6);
         } else {
-            genExpr(node->child);
-            emit("mov r5, r4");
+            REGISTER res = genExpr(node->child);
+            emit("mov r5, %d", res);
             genIntUniOp(EXPRUNIOP(node), R4, R5);
         }
         break;
@@ -194,12 +194,12 @@ REGISTER genFloatExpr(AST_NODE *node) {
         // TODO implicit type cast
         if (EXPRKIND(node) == BINARY_OPERATION) {
             REGISTER res = genExpr(node->child);
-            emit("vstr.f32 s16, [sp]");
+            emit("vstr.f32 %s, [sp]", REG[res]);
             emit("sub sp, #4");
             res = genExpr(node->child->rightSibling);
             emit("add sp, #4");
             emit("vldr.f32 s17, [sp]");
-            emit("vmov.f32 s18, s16");
+            emit("vmov.f32 s18, %s", REG[res]);
             switch (EXPRBINOP(node)) {
             case BINARY_OP_EQ: case BINARY_OP_GE: case BINARY_OP_LE:
             case BINARY_OP_NE: case BINARY_OP_GT: case BINARY_OP_LT:
@@ -209,8 +209,8 @@ REGISTER genFloatExpr(AST_NODE *node) {
                 genFloatBinOp(EXPRBINOP(node), S16, S17, S18);
             }
         } else {
-            genExpr(node->child);
-            emit("vmov.f32 s17, s16");
+            REGISTER res = genExpr(node->child);
+            emit("vmov.f32 s17, %s", res);
             if (EXPRUNIOP(node) == UNARY_OP_LOGICAL_NEGATION) {
                 genFloatUniOp(EXPRUNIOP(node), R4, S17);
                 return R4;
