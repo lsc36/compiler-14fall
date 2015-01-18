@@ -133,7 +133,7 @@ REGISTER genIntExpr(AST_NODE *node) {
             genIntBinOp(EXPRBINOP(node), R4, R5, R6);
         } else {
             REGISTER res = genExpr(node->child);
-            emit("mov r5, %d", res);
+            emit("mov r5, %s", REG[res]);
             genIntUniOp(EXPRUNIOP(node), R4, R5);
         }
         break;
