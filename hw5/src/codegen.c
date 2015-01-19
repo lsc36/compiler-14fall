@@ -13,6 +13,7 @@ int cntWhile;
 int cntElse;
 int cntIf;
 int cntfunc; // make function call easy to read
+int cntShortCurcuit;
 
 void codegenInit() {
     outfile = fopen("output.s", "w");
@@ -120,22 +121,52 @@ REGISTER genExpr(AST_NODE *node) {
 
 REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
+    REGISTER res;
     switch (node->nodeType) {
     case EXPR_NODE:
-        if (EXPRKIND(node) == BINARY_OPERATION) {
-            REGISTER res = genExpr(node->child);
-            emit("str %s, [sp]", REG[res]);
-            emit("sub sp, #4");
-            res = genExpr(node->child->rightSibling);
-            emit("add sp, #4");
-            emit("ldr r5, [sp]");
-            emit("mov r6, %s", REG[res]);
-            genIntBinOp(EXPRBINOP(node), R4, R5, R6);
-        } else {
-            REGISTER res = genExpr(node->child);
-            emit("mov r5, %s", REG[res]);
-            genIntUniOp(EXPRUNIOP(node), R4, R5);
-        }
+		switch (EXPRBINOP(node)) {
+			case BINARY_OP_AND:
+				res = genExpr(node->child);
+				emit("cmp %s, #0", REG[res]);
+				emit("beq __short_cuit__%d", cntShortCurcuit);
+				emit("str %s, [sp]", REG[res]);
+				emit("sub sp, #4");
+				res = genExpr(node->child->rightSibling);
+				emit("add sp, #4");
+				emit("ldr r5, [sp]");
+				emit("mov r6, %s", REG[res]);
+				genIntBinOp(EXPRBINOP(node), R4, R5, R6);
+				emit("__short_cuit__%d:", cntShortCurcuit++);
+				break;
+			case BINARY_OP_OR:
+				res = genExpr(node->child);
+				emit("cmp %s, #1", REG[res]);
+				emit("beq __short_cuit__%d", cntShortCurcuit);
+				emit("str %s, [sp]", REG[res]);
+				emit("sub sp, #4");
+				res = genExpr(node->child->rightSibling);
+				emit("add sp, #4");
+				emit("ldr r5, [sp]");
+				emit("mov r6, %s", REG[res]);
+				genIntBinOp(EXPRBINOP(node), R4, R5, R6);
+				emit("__short_cuit__%d:", cntShortCurcuit++);
+				break;
+			default:
+				if (EXPRKIND(node) == BINARY_OPERATION) {
+					res = genExpr(node->child);
+					emit("str %s, [sp]", REG[res]);
+					emit("sub sp, #4");
+					res = genExpr(node->child->rightSibling);
+					emit("add sp, #4");
+					emit("ldr r5, [sp]");
+					emit("mov r6, %s", REG[res]);
+					genIntBinOp(EXPRBINOP(node), R4, R5, R6);
+				} else {
+					res = genExpr(node->child);
+					emit("mov r5, %d", res);
+					genIntUniOp(EXPRUNIOP(node), R4, R5);
+				}
+		}
         break;
     case CONST_VALUE_NODE:
         switch (CONSTTYPE(node)) {
