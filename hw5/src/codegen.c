@@ -498,7 +498,7 @@ void genBlock(AST_NODE *blockNode) {
                 for (; idNode != NULL; idNode = idNode->rightSibling) {
                     if (IDKIND(idNode) == WITH_INIT_ID) {
                         REGISTER result = genExpr(idNode->child);
-                        if (idNode->dataType == FLOAT_TYPE) {
+                        if (idNode->child->dataType == FLOAT_TYPE) {
                             emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
                         } else {
                             emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
