@@ -122,7 +122,9 @@ REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-        if (EXPRKIND(node) == BINARY_OPERATION) {
+        if (EXPRCONSTEVAL(node)) {
+            emit("mov r4, #%d", EXPRCONSTU(node).iValue);
+        } else if (EXPRKIND(node) == BINARY_OPERATION) {
             REGISTER res = genExpr(node->child);
             emit("str %s, [sp]", REG[res]);
             emit("sub sp, #4");
@@ -192,7 +194,14 @@ REGISTER genFloatExpr(AST_NODE *node) {
     switch (node->nodeType) {
     case EXPR_NODE:
         // TODO implicit type cast
-        if (EXPRKIND(node) == BINARY_OPERATION) {
+        if (EXPRCONSTEVAL(node)) {
+            emit(".data");
+            emit("__CONST_%d: .float %f", cntConst, EXPRCONSTU(node).fValue);
+            emit(".text");
+            emit("ldr r4, =__CONST_%d", cntConst);
+            emit("vldr.f32 s16, [r4]");
+            cntConst++;
+        } else if (EXPRKIND(node) == BINARY_OPERATION) {
             REGISTER res = genExpr(node->child);
             emit("vstr.f32 %s, [sp]", REG[res]);
             emit("sub sp, #4");
