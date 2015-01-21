@@ -152,7 +152,14 @@ REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-        if (EXPRKIND(node) == BINARY_OPERATION) {
+        if (EXPRCONSTEVAL(node)) {
+            emit(".data");
+            emit("__CONST_%d: .word %d", cntConst, EXPRCONSTU(node).iValue);
+            emit(".text");
+            emit("ldr r4, =__CONST_%d", cntConst);
+            emit("ldr r4, [r4]");
+            cntConst++;
+        } else if (EXPRKIND(node) == BINARY_OPERATION) {
             switch (EXPRBINOP(node)) {
             case BINARY_OP_AND:
                 {
@@ -205,7 +212,12 @@ REGISTER genIntExpr(AST_NODE *node) {
     case CONST_VALUE_NODE:
         switch (CONSTTYPE(node)) {
         case INTEGERC:
-            emit("mov r4, #%d", CONSTU(node).intval);
+            emit(".data");
+            emit("__CONST_%d: .word %d", cntConst, CONSTU(node).intval);
+            emit(".text");
+            emit("ldr r4, =__CONST_%d", cntConst);
+            emit("ldr r4, [r4]");
+            cntConst++;
             break;
         case STRINGC:
             {
