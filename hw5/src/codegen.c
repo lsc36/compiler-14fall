@@ -145,7 +145,8 @@ REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-        switch (EXPRBINOP(node)) {
+        if (EXPRKIND(node) == BINARY_OPERATION) {
+            switch (EXPRBINOP(node)) {
             case BINARY_OP_AND:
                 {
                     REGISTER res = genExpr(node->child);
@@ -177,7 +178,7 @@ REGISTER genIntExpr(AST_NODE *node) {
                 }
                 break;
             default:
-                if (EXPRKIND(node) == BINARY_OPERATION) {
+                {
                     REGISTER res = genExpr(node->child);
                     emit("str %s, [sp]", REG[res]);
                     emit("sub sp, #4");
@@ -186,11 +187,12 @@ REGISTER genIntExpr(AST_NODE *node) {
                     emit("ldr r5, [sp]");
                     emit("mov r6, %s", REG[res]);
                     genIntBinOp(EXPRBINOP(node), R4, R5, R6);
-                } else {
-                    REGISTER res = genExpr(node->child);
-                    emit("mov r5, %d", res);
-                    genIntUniOp(EXPRUNIOP(node), R4, R5);
                 }
+            } 
+        } else {
+           REGISTER res = genExpr(node->child);
+           emit("mov r5, #%d", res);
+           genIntUniOp(EXPRUNIOP(node), R4, R5);
         }
         break;
     case CONST_VALUE_NODE:
