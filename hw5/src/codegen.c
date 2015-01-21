@@ -401,6 +401,16 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
                     }
                     break;
                 case WITH_INIT_ID:
+                    {
+                        AST_NODE *constNode = idNode->child;
+                        if (idNode->child->dataType == FLOAT_TYPE) {
+                            float value = constNode->semantic_value.exprSemanticValue.constEvalValue.fValue;
+                            emit("%s: .float %f", name, value);
+                        } else {
+                            int value = constNode->semantic_value.exprSemanticValue.constEvalValue.iValue;
+                            emit("%s: .word %d", name, value);
+                        }
+                    }
                     break;
                 default:
                     ;
