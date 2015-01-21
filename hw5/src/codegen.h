@@ -21,6 +21,7 @@
 #define CONSTU(constNode) (constNode->semantic_value.const1->const_u)
 #define SYMARRPROP(symtabEntry) (symtabEntry->attribute->attr.typeDescriptor->properties.arrayProperties)
 #define SYMFUNCSIGN(symtabEntry) (symtabEntry->attribute->attr.functionSignature)
+#define SYMTYPEDESC(symtabEntry) (symtabEntry->attribute->attr.typeDescriptor)
 
 typedef enum REGISTER {
     R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, SP, LR, PC,

@@ -685,7 +685,13 @@ void genBlock(AST_NODE *blockNode) {
                         if (idNode->child->dataType == FLOAT_TYPE) {
                             emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
                         } else {
-                            emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                            if (SYMTYPEDESC(IDSYM(idNode))->properties.dataType == FLOAT_TYPE) {
+                                emit("vmov s16, %s", REG[result]);
+                                emit("vcvt.f32.s32 s16, s16");
+                                emit("vstr.f32 s16, [fp, #%d]", IDSYM(idNode)->offset);
+                            } else {
+                                emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                            }
                         }
                     }
                 }
