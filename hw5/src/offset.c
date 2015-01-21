@@ -56,6 +56,7 @@ int countArraySize(SymbolTableEntry *arrayID) {
 void countVariableOffset(AST_NODE *blockNode) {
 	
 	AST_NODE *decl;
+	if (blockNode->child == NULL) return;
 	if (blockNode->child->nodeType == VARIABLE_DECL_LIST_NODE) {
 		decl = blockNode->child->child;
 	} else {return;}
