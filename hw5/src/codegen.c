@@ -230,10 +230,8 @@ REGISTER genIntExpr(AST_NODE *node) {
             }
             break;
         case ARRAY_ID:
-            {
-                genArrayPosition(node);
-                emit("ldr r4, [r7]");
-            }
+            genArrayPosition(node);
+            emit("ldr r4, [r7]");
             break;
         default:
             ;
@@ -307,7 +305,8 @@ REGISTER genFloatExpr(AST_NODE *node) {
             }
             break;
         case ARRAY_ID:
-            // TODO
+            genArrayPosition(node);
+            emit("vldr.f32 s16, [r7]");
             break;
         default:
             ;
@@ -423,16 +422,19 @@ void genAssign(AST_NODE *stmtNode) {
         break;
     case ARRAY_ID:
         {
-            /* emit("push {%s}", REG[result]); */
-            emit("str %s, [sp]", REG[result]);
-            emit("sub sp, #4");
-            genArrayPosition(stmtNode->child);
-            emit("add sp, #4");
-            emit("ldr %s, [sp]", REG[result]);
-            /* emit("pop {%s}", REG[result]); */
             if (stmtNode->child->dataType == FLOAT_TYPE) {
+                emit("vstr.f32 %s, [sp]", REG[result]);
+                emit("sub sp, #4");
+                genArrayPosition(stmtNode->child);
+                emit("add sp, #4");
+                emit("vldr.f32 %s, [sp]", REG[result]);
                 emit("vstr.f32 %s, [r7]", REG[result]);
             } else {
+                emit("str %s, [sp]", REG[result]);
+                emit("sub sp, #4");
+                genArrayPosition(stmtNode->child);
+                emit("add sp, #4");
+                emit("ldr %s, [sp]", REG[result]);
                 emit("str %s, [r7]", REG[result]);
             }
         }
