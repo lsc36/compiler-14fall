@@ -120,33 +120,33 @@ REGISTER genExpr(AST_NODE *node) {
 }
 
 void genArrayPosition(AST_NODE *node) {
-	// position will store in r7
-	ArrayProperties properties = SYMARRPROP(IDSYM(node));
-	AST_NODE *exprNode = node->child;
-	int dim = 1;
+    // position will store in r7
+    ArrayProperties properties = SYMARRPROP(IDSYM(node));
+    AST_NODE *exprNode = node->child;
+    int dim = 1;
     emit("mov r4, #0");
-	emit("str r4, [sp]");
-	emit("sub sp, #4");
-	for (; dim <= properties.dimension && exprNode != NULL; dim++, exprNode = exprNode->rightSibling) {
-		int arrSize = (dim == properties.dimension ? 4 : properties.sizeInEachDimension[dim]);
-		REGISTER res = genIntExpr(exprNode);
-		emit("ldr r7, [sp, #4]");
-		emit("add r7, r7, %s", REG[res]);
+    emit("str r4, [sp]");
+    emit("sub sp, #4");
+    for (; dim <= properties.dimension && exprNode != NULL; dim++, exprNode = exprNode->rightSibling) {
+        int arrSize = (dim == properties.dimension ? 4 : properties.sizeInEachDimension[dim]);
+        REGISTER res = genIntExpr(exprNode);
+        emit("ldr r7, [sp, #4]");
+        emit("add r7, r7, %s", REG[res]);
         emit("mov r4, #%d", arrSize);
-		emit("mul r7, r7, r4");
-		emit("str r7, [sp, #4]");
-	}
-	emit("add sp, #4");
-	emit("add r7, r7, #%d", IDSYM(node)->offset);
-	emit("add r7, r7, fp");
+        emit("mul r7, r7, r4");
+        emit("str r7, [sp, #4]");
+    }
+    emit("add sp, #4");
+    emit("add r7, r7, #%d", IDSYM(node)->offset);
+    emit("add r7, r7, fp");
 }
 
 REGISTER genIntExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-		switch (EXPRBINOP(node)) {
-			case BINARY_OP_AND:
+        switch (EXPRBINOP(node)) {
+            case BINARY_OP_AND:
                 {
                     REGISTER res = genExpr(node->child);
                     emit("cmp %s, #0", REG[res]);
@@ -160,8 +160,8 @@ REGISTER genIntExpr(AST_NODE *node) {
                     genIntBinOp(EXPRBINOP(node), R4, R5, R6);
                     emit("__short_cuit__%d:", cntShortCurcuit++);
                 }
-				break;
-			case BINARY_OP_OR:
+                break;
+            case BINARY_OP_OR:
                 {
                     REGISTER res = genExpr(node->child);
                     emit("cmp %s, #1", REG[res]);
@@ -175,23 +175,23 @@ REGISTER genIntExpr(AST_NODE *node) {
                     genIntBinOp(EXPRBINOP(node), R4, R5, R6);
                     emit("__short_cuit__%d:", cntShortCurcuit++);
                 }
-				break;
-			default:
-				if (EXPRKIND(node) == BINARY_OPERATION) {
-					REGISTER res = genExpr(node->child);
-					emit("str %s, [sp]", REG[res]);
-					emit("sub sp, #4");
-					res = genExpr(node->child->rightSibling);
-					emit("add sp, #4");
-					emit("ldr r5, [sp]");
-					emit("mov r6, %s", REG[res]);
-					genIntBinOp(EXPRBINOP(node), R4, R5, R6);
-				} else {
-					REGISTER res = genExpr(node->child);
-					emit("mov r5, %d", res);
-					genIntUniOp(EXPRUNIOP(node), R4, R5);
-				}
-		}
+                break;
+            default:
+                if (EXPRKIND(node) == BINARY_OPERATION) {
+                    REGISTER res = genExpr(node->child);
+                    emit("str %s, [sp]", REG[res]);
+                    emit("sub sp, #4");
+                    res = genExpr(node->child->rightSibling);
+                    emit("add sp, #4");
+                    emit("ldr r5, [sp]");
+                    emit("mov r6, %s", REG[res]);
+                    genIntBinOp(EXPRBINOP(node), R4, R5, R6);
+                } else {
+                    REGISTER res = genExpr(node->child);
+                    emit("mov r5, %d", res);
+                    genIntUniOp(EXPRUNIOP(node), R4, R5);
+                }
+        }
         break;
     case CONST_VALUE_NODE:
         switch (CONSTTYPE(node)) {
@@ -228,10 +228,10 @@ REGISTER genIntExpr(AST_NODE *node) {
             }
             break;
         case ARRAY_ID:
-			{
-				genArrayPosition(node);
-				emit("ldr r4, [r7]");
-			}
+            {
+                genArrayPosition(node);
+                emit("ldr r4, [r7]");
+            }
             break;
         default:
             ;
@@ -399,45 +399,45 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
 void genAssign(AST_NODE *stmtNode) {
     // TODO array
     REGISTER result = genExpr(stmtNode->child->rightSibling);
-	switch (IDKIND(stmtNode->child)) {
-	case NORMAL_ID:
-		if (stmtNode->child->dataType == FLOAT_TYPE) {
-			if (IDSYM(stmtNode->child)->nestingLevel == 0) {
-				emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
-				emit("vstr.f32 %s, [r7]", REG[result]);
-			} else {
-				emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
-			}
-			if (result != S16) emit("vmov.f32 s16, %s", REG[result]);
-		} else {
-			if (IDSYM(stmtNode->child)->nestingLevel == 0) {
-				emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
-				emit("str %s, [r7]", REG[result]);
-			} else {
-				emit("str %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
-			}
-			if (result != R4) emit("mov r4, %s", REG[result]);
-		}
-		break;
-	case ARRAY_ID:
-		{
+    switch (IDKIND(stmtNode->child)) {
+    case NORMAL_ID:
+        if (stmtNode->child->dataType == FLOAT_TYPE) {
+            if (IDSYM(stmtNode->child)->nestingLevel == 0) {
+                emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
+                emit("vstr.f32 %s, [r7]", REG[result]);
+            } else {
+                emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
+            }
+            if (result != S16) emit("vmov.f32 s16, %s", REG[result]);
+        } else {
+            if (IDSYM(stmtNode->child)->nestingLevel == 0) {
+                emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
+                emit("str %s, [r7]", REG[result]);
+            } else {
+                emit("str %s, [fp, #%d]", REG[result], IDSYM(stmtNode->child)->offset);
+            }
+            if (result != R4) emit("mov r4, %s", REG[result]);
+        }
+        break;
+    case ARRAY_ID:
+        {
             /* emit("push {%s}", REG[result]); */
             emit("str %s, [sp]", REG[result]);
             emit("sub sp, #4");
-			genArrayPosition(stmtNode->child);
+            genArrayPosition(stmtNode->child);
             emit("add sp, #4");
             emit("ldr %s, [sp]", REG[result]);
             /* emit("pop {%s}", REG[result]); */
-			if (stmtNode->child->dataType == FLOAT_TYPE) {
-				emit("vstr.f32 %s, [r7]", REG[result]);
-			} else {
-				emit("str %s, [r7]", REG[result]);
-			}
-		}
-		break;
-	default:
-		;
-	}
+            if (stmtNode->child->dataType == FLOAT_TYPE) {
+                emit("vstr.f32 %s, [r7]", REG[result]);
+            } else {
+                emit("str %s, [r7]", REG[result]);
+            }
+        }
+        break;
+    default:
+        ;
+    }
 }
 
 void genIf(AST_NODE *stmtNode) {
