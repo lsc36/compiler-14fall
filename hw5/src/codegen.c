@@ -10,6 +10,7 @@ FILE *outfile;
 AST_NODE *curFuncIdNode;
 int cntConst;
 int cntWhile;
+int cntFor;
 int cntElse;
 int cntIf;
 int cntfunc; // make function call easy to read
@@ -256,12 +257,28 @@ REGISTER genFloatExpr(AST_NODE *node) {
     // XXX stack machine
     switch (node->nodeType) {
     case EXPR_NODE:
-        // TODO implicit type cast
-        if (EXPRKIND(node) == BINARY_OPERATION) {
+        if (EXPRCONSTEVAL(node)) {
+            emit(".data");
+            emit("__CONST_%d: .float %f", cntConst, EXPRCONSTU(node).fValue);
+            emit(".text");
+            emit("ldr r4, =__CONST_%d", cntConst);
+            emit("vldr.f32 s16, [r4]");
+            cntConst++;
+        } else if (EXPRKIND(node) == BINARY_OPERATION) {
             REGISTER res = genExpr(node->child);
+            if (node->child->dataType == INT_TYPE) {
+                emit("vmov s16, %s", REG[res]);
+                emit("vcvt.f32.s32 s16, s16");
+                res = S16;
+            }
             emit("vstr.f32 %s, [sp]", REG[res]);
             emit("sub sp, #4");
             res = genExpr(node->child->rightSibling);
+            if (node->child->rightSibling->dataType == INT_TYPE) {
+                emit("vmov s16, %s", REG[res]);
+                emit("vcvt.f32.s32 s16, s16");
+                res = S16;
+            }
             emit("add sp, #4");
             emit("vldr.f32 s17, [sp]");
             emit("vmov.f32 s18, %s", REG[res]);
@@ -534,7 +551,56 @@ void genStmt(AST_NODE *stmtNode) {
         }
         break;
     case FOR_STMT:
-        // TODO
+        {
+            int idFor = cntFor++;
+            REGISTER result;
+            AST_NODE *initNode, *condNode, *incrNode, *loopNode;
+            initNode = stmtNode->child;
+            condNode = initNode->rightSibling;
+            incrNode = condNode->rightSibling;
+            loopNode = incrNode->rightSibling;
+            emit("__for_start_%d:", idFor);
+            if (initNode->nodeType == NONEMPTY_ASSIGN_EXPR_LIST_NODE) {
+                AST_NODE *assignNode = initNode->child;
+                for (; assignNode != NULL; assignNode = assignNode->rightSibling) {
+                    genAssign(assignNode);
+                }
+            }
+            emit("__for_loop_%d:", idFor);
+            if (condNode->nodeType == NONEMPTY_RELOP_EXPR_LIST_NODE) {
+                AST_NODE *exprNode = condNode->child;
+                for (; exprNode != NULL; exprNode = exprNode->rightSibling) {
+                    result = genExpr(exprNode);
+                }
+                if (S0 <= result && result <= S31) {
+                    emit("vcmp.f32 %s, #0.0", REG[result]);
+                    emit("vmrs apsr_nzcv, fpscr");
+                    emit("beq __for_end_%d", idFor);
+                } else {
+                    emit("cmp %s, #0", REG[result]);
+                    emit("beq __for_end_%d", idFor);
+                }
+            }
+            if (loopNode->nodeType == STMT_NODE) {
+                genStmt(loopNode);
+            } else if (loopNode->nodeType == BLOCK_NODE) {
+                genBlock(loopNode);
+            } else if (loopNode->nodeType == NUL_NODE) {
+                // do nothing
+            }
+            if (incrNode->nodeType == NONEMPTY_ASSIGN_EXPR_LIST_NODE) {
+                AST_NODE *assignNode = incrNode->child;
+                for (; assignNode != NULL; assignNode = assignNode->rightSibling) {
+                    if (assignNode->nodeType == STMT_NODE) {
+                        genAssign(assignNode);
+                    } else if (assignNode->nodeType == EXPR_NODE) {
+                        genExpr(assignNode);
+                    }
+                }
+            }
+            emit("b __for_loop_%d", idFor);
+            emit("__for_end_%d:", idFor);
+        }
         break;
     case ASSIGN_STMT:
         genAssign(stmtNode);
@@ -586,7 +652,7 @@ void genBlock(AST_NODE *blockNode) {
                 for (; idNode != NULL; idNode = idNode->rightSibling) {
                     if (IDKIND(idNode) == WITH_INIT_ID) {
                         REGISTER result = genExpr(idNode->child);
-                        if (idNode->dataType == FLOAT_TYPE) {
+                        if (idNode->child->dataType == FLOAT_TYPE) {
                             emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
                         } else {
                             emit("str %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
