@@ -446,13 +446,21 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
             }
             emit("sub sp, sp, #%d", 4 * paramCnt);
             int i = 0;
+            Parameter *param = SYMFUNCSIGN(IDSYM(funcIdNode))->parameterList;
             for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
-                genExpr(exprNode);
+                REGISTER res = genExpr(exprNode);
                 if (exprNode->dataType == FLOAT_TYPE) {
-                    emit("vstr.f32 s16, [sp, #%d]", (++i) * 4);
+                    emit("vstr.f32 %s, [sp, #%d]", REG[res], (++i) * 4);
                 } else {
-                    emit("str r4, [sp, #%d]", (++i) * 4);
+                    if (param->type->properties.dataType == FLOAT_TYPE) {
+                        emit("vmov s16, %s", REG[res]);
+                        emit("vcvt.f32.s32 s16, s16");
+                        emit("vstr.f32 s16, [sp, #%d]", (++i) * 4);
+                    } else {
+                        emit("str %s, [sp, #%d]", REG[res], (++i) * 4);
+                    }
                 }
+                param = param->next;
             }
         }
         emit("bl _start_%s", IDSTR(funcCallStmtNode->child));
