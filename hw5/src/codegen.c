@@ -137,8 +137,14 @@ void genArrayPosition(AST_NODE *node) {
         emit("str r7, [sp, #4]");
     }
     emit("add sp, #4");
-    emit("add r7, r7, #%d", IDSYM(node)->offset);
-    emit("add r7, r7, fp");
+    if (IDSYM(node)->nestingLevel == 0) {
+        emit("ldr r4, =_g_%s", IDSTR(node));
+        emit("add r7, r7, r4");
+    }
+    else {
+        emit("add r7, r7, #%d", IDSYM(node)->offset);
+        emit("add r7, r7, fp");
+    }
 }
 
 REGISTER genIntExpr(AST_NODE *node) {
@@ -188,7 +194,7 @@ REGISTER genIntExpr(AST_NODE *node) {
                     emit("mov r6, %s", REG[res]);
                     genIntBinOp(EXPRBINOP(node), R4, R5, R6);
                 }
-            } 
+            }
         } else {
            REGISTER res = genExpr(node->child);
            emit("mov r5, #%d", res);
@@ -337,20 +343,38 @@ void genGlobalVarDecl(AST_NODE *varDeclListNode) {
             for (; idNode != NULL; idNode = idNode->rightSibling) {
                 char name[300];
                 sprintf(name, "_g_%s", IDSTR(idNode));
-                if (type == INT_TYPE) {
-                    int value = 0;
-                    typeMark = ".word";
-                    if (idNode->child != 0) {
-                        value = idNode->child->semantic_value.const1->const_u.intval;
+                switch (IDKIND(idNode)) {
+                case NORMAL_ID:
+                    if (type == INT_TYPE) {
+                        int value = 0;
+                        typeMark = ".word";
+                        if (idNode->child != 0) {
+                            value = idNode->child->semantic_value.const1->const_u.intval;
+                        }
+                        emit("%s: %s %d", name, typeMark, value);
+                    } else if (type == FLOAT_TYPE) {
+                        double value = 0.0;
+                        typeMark = ".float";
+                        if (idNode->child != 0) {
+                            value = idNode->child->semantic_value.const1->const_u.fval;
+                        }
+                        emit("%s: %s %lf", name, typeMark, value);
                     }
-                    emit("%s: %s %d", name, typeMark, value);
-                } else if (type == FLOAT_TYPE) {
-                    double value = 0.0;
-                    typeMark = ".float";
-                    if (idNode->child != 0) {
-                        value = idNode->child->semantic_value.const1->const_u.fval;
+                    break;
+                case ARRAY_ID:
+                    {
+                        // TODO: write a function to count array size
+                        int i, product = 4;
+                        for (i = 0; i < SYMARRPROP(IDSYM(idNode)).dimension; i++) {
+                            product *= SYMARRPROP(IDSYM(idNode)).sizeInEachDimension[i];
+                        }
+                        emit("%s: .skip %d", name, product);
                     }
-                    emit("%s: %s %lf", name, typeMark, value);
+                    break;
+                case WITH_INIT_ID:
+                    break;
+                default:
+                    ;
                 }
             }
         }
@@ -398,7 +422,6 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
 }
 
 void genAssign(AST_NODE *stmtNode) {
-    // TODO array
     REGISTER result = genExpr(stmtNode->child->rightSibling);
     switch (IDKIND(stmtNode->child)) {
     case NORMAL_ID:
@@ -421,22 +444,20 @@ void genAssign(AST_NODE *stmtNode) {
         }
         break;
     case ARRAY_ID:
-        {
-            if (stmtNode->child->dataType == FLOAT_TYPE) {
-                emit("vstr.f32 %s, [sp]", REG[result]);
-                emit("sub sp, #4");
-                genArrayPosition(stmtNode->child);
-                emit("add sp, #4");
-                emit("vldr.f32 %s, [sp]", REG[result]);
-                emit("vstr.f32 %s, [r7]", REG[result]);
-            } else {
-                emit("str %s, [sp]", REG[result]);
-                emit("sub sp, #4");
-                genArrayPosition(stmtNode->child);
-                emit("add sp, #4");
-                emit("ldr %s, [sp]", REG[result]);
-                emit("str %s, [r7]", REG[result]);
-            }
+        if (stmtNode->child->dataType == FLOAT_TYPE) {
+            emit("vstr.f32 %s, [sp]", REG[result]);
+            emit("sub sp, #4");
+            genArrayPosition(stmtNode->child);
+            emit("add sp, #4");
+            emit("vldr.f32 %s, [sp]", REG[result]);
+            emit("vstr.f32 %s, [r7]", REG[result]);
+        } else {
+            emit("str %s, [sp]", REG[result]);
+            emit("sub sp, #4");
+            genArrayPosition(stmtNode->child);
+            emit("add sp, #4");
+            emit("ldr %s, [sp]", REG[result]);
+            emit("str %s, [r7]", REG[result]);
         }
         break;
     default:
