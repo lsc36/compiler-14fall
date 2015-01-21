@@ -450,7 +450,13 @@ void genFuncCall(AST_NODE *funcCallStmtNode) {
             for (exprNode = paramListNode->child; exprNode != NULL; exprNode = exprNode->rightSibling) {
                 REGISTER res = genExpr(exprNode);
                 if (exprNode->dataType == FLOAT_TYPE) {
-                    emit("vstr.f32 %s, [sp, #%d]", REG[res], (++i) * 4);
+                    if (param->type->properties.dataType == FLOAT_TYPE) {
+                        emit("vcvt.s32.f32 %s, %s", REG[res], REG[res]);
+                        emit("vmov r4, %s", REG[res]);
+                        emit("str r4, [sp, #%d]", (++i) * 4);
+                    } else {
+                        emit("vstr.f32 %s, [sp, #%d]", REG[res], (++i) * 4);
+                    }
                 } else {
                     if (param->type->properties.dataType == FLOAT_TYPE) {
                         emit("vmov s16, %s", REG[res]);
@@ -473,6 +479,11 @@ void genAssign(AST_NODE *stmtNode) {
     switch (IDKIND(stmtNode->child)) {
     case NORMAL_ID:
         if (stmtNode->child->dataType == FLOAT_TYPE) {
+            if (stmtNode->child->rightSibling->dataType == INT_TYPE) {
+                emit("vmov s16, %s", REG[result]);
+                emit("vcvt.f32.s32 s16, s16");
+                result = S16;
+            }
             if (IDSYM(stmtNode->child)->nestingLevel == 0) {
                 emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
                 emit("vstr.f32 %s, [r7]", REG[result]);
@@ -481,6 +492,11 @@ void genAssign(AST_NODE *stmtNode) {
             }
             if (result != S16) emit("vmov.f32 s16, %s", REG[result]);
         } else {
+            if (stmtNode->child->rightSibling->dataType == FLOAT_TYPE) {
+                emit("vcvt.s32.f32 %s, %s", REG[result], REG[result]);
+                emit("vmov r4, %s", REG[result]);
+                result = R4;
+            }
             if (IDSYM(stmtNode->child)->nestingLevel == 0) {
                 emit("ldr r7, =_g_%s", IDSTR(stmtNode->child));
                 emit("str %s, [r7]", REG[result]);
@@ -492,6 +508,11 @@ void genAssign(AST_NODE *stmtNode) {
         break;
     case ARRAY_ID:
         if (stmtNode->child->dataType == FLOAT_TYPE) {
+            if (stmtNode->child->rightSibling->dataType == INT_TYPE) {
+                emit("vmov s16, %s", REG[result]);
+                emit("vcvt.f32.s32 s16, s16");
+                result = S16;
+            }
             emit("vstr.f32 %s, [sp]", REG[result]);
             emit("sub sp, #4");
             genArrayPosition(stmtNode->child);
@@ -499,6 +520,11 @@ void genAssign(AST_NODE *stmtNode) {
             emit("vldr.f32 %s, [sp]", REG[result]);
             emit("vstr.f32 %s, [r7]", REG[result]);
         } else {
+            if (stmtNode->child->rightSibling->dataType == FLOAT_TYPE) {
+                emit("vcvt.s32.f32 %s, %s", REG[result], REG[result]);
+                emit("vmov r4, %s", REG[result]);
+                result = R4;
+            }
             emit("str %s, [sp]", REG[result]);
             emit("sub sp, #4");
             genArrayPosition(stmtNode->child);
@@ -683,7 +709,13 @@ void genBlock(AST_NODE *blockNode) {
                     if (IDKIND(idNode) == WITH_INIT_ID) {
                         REGISTER result = genExpr(idNode->child);
                         if (idNode->child->dataType == FLOAT_TYPE) {
-                            emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                            if (SYMTYPEDESC(IDSYM(idNode))->properties.dataType == INT_TYPE) {
+                                emit("vcvt.s32.f32 %s, %s", REG[result], REG[result]);
+                                emit("vmov r4, %s", REG[result]);
+                                emit("str r4, [fp, #%d]", IDSYM(idNode)->offset);
+                            } else {
+                                emit("vstr.f32 %s, [fp, #%d]", REG[result], IDSYM(idNode)->offset);
+                            }
                         } else {
                             if (SYMTYPEDESC(IDSYM(idNode))->properties.dataType == FLOAT_TYPE) {
                                 emit("vmov s16, %s", REG[result]);
